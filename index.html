@@ -13,6 +13,36 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <section class="onboarding" id="onboarding" hidden>
+      <form class="onboarding-card" id="onboardingForm">
+        <span class="brand-mark">MB</span>
+        <p class="eyebrow">Private setup · stored only here</p>
+        <h1>Build your mountain plan.</h1>
+        <p class="hero-copy">A few honest inputs make the next 12 weeks yours.</p>
+        <div class="form-grid">
+          <label class="field"><span>Height (inches)</span><input name="heightIn" type="number" min="48" max="84" step="0.5" required /></label>
+          <label class="field"><span>Current weight (lb)</span><input name="weight" type="number" min="80" max="500" step="0.1" required /></label>
+          <label class="field"><span>Goal weight (lb)</span><input name="goalWeight" type="number" min="80" max="500" step="0.1" /></label>
+          <label class="field"><span>Goal body composition</span><input name="goalComposition" placeholder="e.g. 20% body fat, size L" /></label>
+          <label class="field"><span>Gym access</span><select name="gymAccess"><option>Planet Fitness</option><option>Home gym</option><option>Outdoors only</option><option>Full gym</option></select></label>
+          <label class="field"><span>Hiking goal</span><select name="hikingGoal"><option>Mount Rainier</option><option>Backpacking</option><option>Snow camping</option><option>General beast mode</option></select></label>
+          <label class="field"><span>Start date</span><input name="startDate" type="date" required /></label>
+          <label class="field"><span>Injuries or pain areas</span><input name="injuries" placeholder="None, knees, back, shins..." /></label>
+        </div>
+        <fieldset class="day-picker">
+          <legend>Days available</legend>
+          <label><input type="checkbox" name="days" value="1" checked /> Mon</label>
+          <label><input type="checkbox" name="days" value="2" checked /> Tue</label>
+          <label><input type="checkbox" name="days" value="3" checked /> Wed</label>
+          <label><input type="checkbox" name="days" value="4" checked /> Thu</label>
+          <label><input type="checkbox" name="days" value="5" checked /> Fri</label>
+          <label><input type="checkbox" name="days" value="6" checked /> Sat</label>
+          <label><input type="checkbox" name="days" value="0" /> Sun</label>
+        </fieldset>
+        <button class="primary-button" type="submit">Create my 12-week plan</button>
+      </form>
+    </section>
+
     <header class="topbar">
       <a class="brand" href="#today" aria-label="Mountain Beast home">
         <span class="brand-mark">MB</span>
@@ -44,6 +74,7 @@
             <span class="status-pill" id="todayStatus">Planned</span>
           </div>
           <div id="workoutContent"></div>
+          <div id="ruckToday"></div>
           <label class="field">
             <span>Workout notes</span>
             <textarea id="workoutNotes" rows="3" placeholder="How did it feel?"></textarea>
@@ -57,6 +88,15 @@
             <p id="painGuidance">Green light: form stays normal.</p>
           </div>
           <button class="primary-button" id="completeWorkout">Complete workout</button>
+        </article>
+
+        <article class="readiness-card" id="readinessCard">
+          <div class="score-ring" id="readinessRing"><strong id="readinessScore">0</strong><small>/100</small></div>
+          <div>
+            <p class="eyebrow">Rainier Prep Score</p>
+            <h2 id="beastTitle">Base Camp Builder</h2>
+            <p id="readinessMessage">Complete sessions to build your score.</p>
+          </div>
         </article>
 
         <div class="metric-grid">
@@ -85,6 +125,20 @@
             </div>
           </div>
           <div class="week-strip" id="weekStrip"></div>
+        </article>
+
+        <article class="card">
+          <p class="eyebrow">Daily fuel & recovery</p>
+          <h2>Don’t break the chain</h2>
+          <div class="habit-grid" id="habitGrid">
+            <label><input type="checkbox" data-habit="protein" /><span>Protein hit</span></label>
+            <label><input type="checkbox" data-habit="calories" /><span>Calories close</span></label>
+            <label><input type="checkbox" data-habit="water" /><span>Water</span></label>
+            <label><input type="checkbox" data-habit="fiber" /><span>Fiber</span></label>
+            <label><input type="checkbox" data-habit="mobility" /><span>Mobility</span></label>
+          </div>
+          <label class="field"><span>Nutrition note</span><input id="nutritionNote" placeholder="Zero-calorie drinks, appetite, meals..." /></label>
+          <div class="streak-row" id="streakRow"></div>
         </article>
       </section>
 
@@ -123,6 +177,26 @@
           <button class="primary-button" type="submit">Save check-in</button>
         </form>
         <div id="checkinHistory"></div>
+
+        <form class="card form-card" id="ruckForm">
+          <p class="eyebrow">Trail log</p>
+          <h2>Log a hike or ruck</h2>
+          <div class="form-grid">
+            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
+            <label class="field"><span>Pack weight (lb)</span><input type="number" name="packWeight" min="0" max="100" step="0.5" required /></label>
+            <label class="field"><span>Miles</span><input type="number" name="miles" min="0" max="100" step="0.1" required /></label>
+            <label class="field"><span>Elevation gain (ft)</span><input type="number" name="elevation" min="0" max="30000" step="10" /></label>
+            <label class="field"><span>Time (minutes)</span><input type="number" name="minutes" min="1" max="1440" required /></label>
+            <label class="field"><span>Difficulty (1–10)</span><input type="number" name="difficulty" min="1" max="10" required /></label>
+            <label class="field"><span>Feet pain (0–10)</span><input type="number" name="feetPain" min="0" max="10" value="0" /></label>
+            <label class="field"><span>Knee pain (0–10)</span><input type="number" name="kneePain" min="0" max="10" value="0" /></label>
+            <label class="field"><span>Back pain (0–10)</span><input type="number" name="backPain" min="0" max="10" value="0" /></label>
+            <label class="field"><span>Terrain</span><select name="terrain"><option>Treadmill incline</option><option>Pavement</option><option>Rolling trail</option><option>Steep trail</option><option>Stairs</option><option>Snow</option></select></label>
+          </div>
+          <label class="field"><span>Terrain and recovery notes</span><textarea name="notes" rows="3"></textarea></label>
+          <button class="primary-button" type="submit">Save hike / ruck</button>
+        </form>
+        <div id="ruckHistory"></div>
       </section>
 
       <section class="view" id="progress" data-view="progress">
@@ -132,6 +206,12 @@
           <p>Estimates guide decisions; they are not medical measurements or promises.</p>
         </div>
         <div class="progress-grid">
+          <article class="card readiness-detail">
+            <p class="eyebrow">Rainier Prep Score</p>
+            <strong class="big-number" id="progressReadiness">0</strong>
+            <span id="progressTitle">Base Camp Builder</span>
+            <div id="scoreBreakdown"></div>
+          </article>
           <article class="card highlight-card">
             <p class="eyebrow">Current estimate</p>
             <strong class="big-number" id="currentBf">—</strong>
@@ -213,6 +293,7 @@
       </details>
       <button class="secondary-button" id="exportData">Export private backup</button>
       <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
+      <button class="secondary-button" id="editProfile">Edit training setup</button>
       <button class="danger-button" id="resetData">Reset local data</button>
     </dialog>
 
