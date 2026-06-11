@@ -1,0 +1,10 @@
+{
+  "name": "Mountain Beast Foundation",
+  "short_name": "Mountain Beast",
+  "description": "Private, local-first 12-week health and training tracker.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbfaf6",
+  "theme_color": "#102a25",
+  "icons": []
+}

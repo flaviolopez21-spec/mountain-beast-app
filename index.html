@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#102a25" />
+    <meta
+      name="description"
+      content="A private, local-first tracker for the Mountain Beast Foundation program."
+    />
+    <title>Mountain Beast</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#today" aria-label="Mountain Beast home">
+        <span class="brand-mark">MB</span>
+        <span><strong>Mountain Beast</strong><small>12-week foundation</small></span>
+      </a>
+      <button class="icon-button" id="settingsButton" aria-label="Open data and privacy settings">•••</button>
+    </header>
+
+    <main>
+      <section class="view active" id="today" data-view="today">
+        <div class="hero">
+          <div>
+            <p class="eyebrow" id="dateLabel"></p>
+            <h1 id="greeting">Build the chassis.</h1>
+            <p class="hero-copy" id="phaseLabel"></p>
+          </div>
+          <div class="week-ring" id="weekRing" aria-label="Program progress">
+            <span id="weekNumber">1</span>
+            <small>week</small>
+          </div>
+        </div>
+
+        <article class="card workout-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow" id="todayPurpose"></p>
+              <h2 id="todayWorkout"></h2>
+            </div>
+            <span class="status-pill" id="todayStatus">Planned</span>
+          </div>
+          <div id="workoutContent"></div>
+          <label class="field">
+            <span>Workout notes</span>
+            <textarea id="workoutNotes" rows="3" placeholder="How did it feel?"></textarea>
+          </label>
+          <div class="pain-check">
+            <div>
+              <span class="field-label">Pain check</span>
+              <strong id="painValue">0 / 10</strong>
+            </div>
+            <input id="painInput" type="range" min="0" max="10" value="0" />
+            <p id="painGuidance">Green light: form stays normal.</p>
+          </div>
+          <button class="primary-button" id="completeWorkout">Complete workout</button>
+        </article>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Weight</span>
+            <strong id="weightMetric">190.0</strong>
+            <small>lb · manual</small>
+          </article>
+          <article class="metric-card">
+            <span>Est. body fat</span>
+            <strong id="bodyFatMetric">—</strong>
+            <small>Navy estimate</small>
+          </article>
+          <article class="metric-card">
+            <span>Adherence</span>
+            <strong id="adherenceMetric">0%</strong>
+            <small>completed sessions</small>
+          </article>
+        </div>
+
+        <article class="card compact-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">This week</p>
+              <h2>Consistency board</h2>
+            </div>
+          </div>
+          <div class="week-strip" id="weekStrip"></div>
+        </article>
+      </section>
+
+      <section class="view" id="plan" data-view="plan">
+        <div class="section-heading">
+          <p class="eyebrow">June 15 – September 6, 2026</p>
+          <h1>Your 12-week plan</h1>
+          <p>Progress only when form and joints feel good. Saturday is the cornerstone.</p>
+        </div>
+        <div class="block-tabs" id="blockTabs">
+          <button class="active" data-block="1">Weeks 1–4</button>
+          <button data-block="2">Weeks 5–8</button>
+          <button data-block="3">Weeks 9–12</button>
+        </div>
+        <div class="plan-list" id="planList"></div>
+      </section>
+
+      <section class="view" id="checkin" data-view="checkin">
+        <div class="section-heading">
+          <p class="eyebrow">Same conditions, once a week</p>
+          <h1>Body check-in</h1>
+          <p>Measure relaxed, before breakfast, after using the bathroom.</p>
+        </div>
+        <form class="card form-card" id="checkinForm">
+          <div class="form-grid">
+            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
+            <label class="field"><span>Weight (lb)</span><input type="number" name="weight" step="0.1" min="80" max="500" required /></label>
+            <label class="field"><span>Navel (in)</span><input type="number" name="navel" step="0.1" min="20" max="80" required /></label>
+            <label class="field"><span>Neck (in)</span><input type="number" name="neck" step="0.1" min="8" max="30" required /></label>
+            <label class="field"><span>Lower waist (in)</span><input type="number" name="waist" step="0.1" min="20" max="80" /></label>
+            <label class="field"><span>Chest (in)</span><input type="number" name="chest" step="0.1" min="20" max="80" /></label>
+            <label class="field"><span>Hips (in)</span><input type="number" name="hips" step="0.1" min="20" max="80" /></label>
+            <label class="field"><span>Thigh (in)</span><input type="number" name="thigh" step="0.1" min="10" max="50" /></label>
+          </div>
+          <label class="field"><span>Check-in notes</span><textarea name="notes" rows="3" placeholder="Energy, sleep, fit, or recovery notes"></textarea></label>
+          <button class="primary-button" type="submit">Save check-in</button>
+        </form>
+        <div id="checkinHistory"></div>
+      </section>
+
+      <section class="view" id="progress" data-view="progress">
+        <div class="section-heading">
+          <p class="eyebrow">Direction over perfection</p>
+          <h1>Progress</h1>
+          <p>Estimates guide decisions; they are not medical measurements or promises.</p>
+        </div>
+        <div class="progress-grid">
+          <article class="card highlight-card">
+            <p class="eyebrow">Current estimate</p>
+            <strong class="big-number" id="currentBf">—</strong>
+            <span>body fat · ±3–4 percentage points</span>
+            <div class="detail-row"><span>Lean mass estimate</span><strong id="leanMass">—</strong></div>
+            <div class="detail-row"><span>Waist-to-height</span><strong id="waistHeight">—</strong></div>
+          </article>
+          <article class="card">
+            <p class="eyebrow">Daily targets</p>
+            <h2 id="calorieTarget">— kcal</h2>
+            <p class="muted">Moderate starting deficit</p>
+            <div class="target-bar"><span id="proteinBar"></span></div>
+            <div class="detail-row"><span>Protein range</span><strong id="proteinTarget">—</strong></div>
+            <div class="detail-row"><span>Est. maintenance</span><strong id="maintenanceTarget">—</strong></div>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Measurements</p>
+              <h2>Weight & navel trend</h2>
+            </div>
+          </div>
+          <div class="chart" id="trendChart"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Planning ranges</p>
+              <h2>12-week outlook</h2>
+            </div>
+          </div>
+          <div class="projection-list" id="projectionList"></div>
+          <p class="fine-print">These ranges assume consistent training and a sustainable calorie deficit. Actual results vary.</p>
+        </article>
+
+        <article class="card">
+          <p class="eyebrow">Clothing milestones</p>
+          <h2>Estimated fit ranges</h2>
+          <div class="milestone">
+            <span class="milestone-icon">L</span>
+            <div><strong>Supima tee: XL → L</strong><p id="shirtEstimate"></p></div>
+          </div>
+          <div class="milestone">
+            <span class="milestone-icon">30</span>
+            <div><strong>Pants: 32 → 30</strong><p id="pantsEstimate"></p></div>
+          </div>
+          <div class="estimate-method" id="clothingMethod"></div>
+        </article>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <a class="active" href="#today" data-target="today"><span>●</span>Today</a>
+      <a href="#plan" data-target="plan"><span>▦</span>Plan</a>
+      <a href="#checkin" data-target="checkin"><span>＋</span>Check-in</a>
+      <a href="#progress" data-target="progress"><span>↗</span>Progress</a>
+    </nav>
+
+    <dialog id="settingsDialog">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Local-first</p><h2>Data & privacy</h2></div>
+        <button class="icon-button" id="closeSettings" aria-label="Close settings">×</button>
+      </div>
+      <p>Your entries stay in this browser on this device. No account, analytics, ads, or remote database is used.</p>
+      <div class="notice">
+        <strong>Apple Health</strong>
+        <p>Import an extracted Apple Health <code>export.xml</code> file. It is processed only in this browser and is not uploaded to a server.</p>
+      </div>
+      <label class="secondary-button file-button">Import Apple Health XML<input id="healthImport" type="file" accept=".xml,text/xml,application/xml" /></label>
+      <div class="import-summary" id="healthImportSummary">No Apple Health file imported yet.</div>
+      <details class="setup-guide">
+        <summary>How Apple Watch sync works with GitHub</summary>
+        <p><strong>GitHub Pages hosts the website, but it cannot access HealthKit.</strong> On iPhone, export Health data from the Health app, unzip the export, and choose <code>apple_health_export/export.xml</code> above.</p>
+        <p>True automatic sync requires a signed native iPhone app built with Xcode, HealthKit permissions, and an App Store or personal-device installation. The native app can then pass selected records into this local tracker. Publishing these files to GitHub does not enable that permission.</p>
+        <p>Because this version has no cloud account, iPhone and computer data remain separate. Use private backup export and restore to move data between them. Do not commit personal backup or Health XML files to a public repository.</p>
+      </details>
+      <button class="secondary-button" id="exportData">Export private backup</button>
+      <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
+      <button class="danger-button" id="resetData">Reset local data</button>
+    </dialog>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
