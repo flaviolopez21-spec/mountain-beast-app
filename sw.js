@@ -1,9 +1,11 @@
-const CACHE = "mountain-beast-v4";
+const CACHE = "mountain-beast-v8";
 const ASSETS = ["./", "./index.html", "./styles.css", "./programs.js", "./app.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
-  self.skipWaiting();
+});
+self.addEventListener("message", event => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 self.addEventListener("activate", event => {
   event.waitUntil(

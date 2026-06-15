@@ -10,6 +10,11 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="update-banner" id="updateBanner" hidden>
+      <span><strong>New version available</strong><small>Your local data will stay intact.</small></span>
+      <button id="updateNow">Update now</button>
+    </div>
+
     <section class="onboarding" id="onboarding" hidden>
       <form class="onboarding-card" id="onboardingForm">
         <span class="brand-mark">MB</span>
@@ -43,7 +48,11 @@
     <header class="topbar">
       <a class="brand" href="#today" aria-label="Mountain Beast home">
         <span class="brand-mark">MB</span>
-        <span><strong>Mountain Beast</strong><small id="activeProgramLabel">12-Week VO₂ Max Rebuild</small></span>
+        <span>
+          <strong>Mountain Beast</strong>
+          <small id="activeProgramLabel">Current Mission: 12-Week VO₂ Max Rebuild</small>
+          <small id="headerWeekLabel">Week 1 of 12</small>
+        </span>
       </a>
       <button class="icon-button" id="settingsButton" aria-label="Open settings">•••</button>
     </header>
@@ -72,19 +81,42 @@
           <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
         </article>
 
-        <article class="card workout-card">
+        <article class="card workout-card" id="todayWorkoutCard">
           <div class="card-heading">
             <div><p class="eyebrow" id="todayPurpose"></p><h2 id="todayWorkout"></h2></div>
-            <span class="status-pill" id="todayStatus">Planned</span>
+            <span class="status-pill" id="todayStatus">Zone 2 Walk</span>
           </div>
           <div class="adaptation-banner" id="adaptationBanner"></div>
           <div id="workoutContent"></div>
+          <div class="timer-tools" id="timerTools">
+            <button data-timer-kind="warmup">Warm-up timer</button>
+            <button data-timer-kind="main">Workout timer</button>
+            <button data-timer-kind="cooldown">Cool-down timer</button>
+            <button data-timer-kind="interval" id="intervalTimerButton">Interval timer</button>
+          </div>
+          <div class="timer-panel" id="timerPanel" hidden>
+            <div>
+              <p class="eyebrow" id="timerPhase">Timer</p>
+              <strong id="timerDisplay">00:00</strong>
+              <span id="timerRound"></span>
+            </div>
+            <div class="timer-actions">
+              <button id="timerPause">Pause</button>
+              <button id="timerStop">Stop</button>
+            </div>
+          </div>
           <label class="field"><span>Session notes</span><textarea id="workoutNotes" rows="3" placeholder="Breathing, pace, confidence, wins..."></textarea></label>
-          <button class="primary-button" id="logTodayButton">Log this session</button>
+          <div class="today-actions">
+            <button class="primary-button" id="completeTodayButton">Complete Session</button>
+            <button class="secondary-button" id="reduceTodayButton">I need to reduce it</button>
+            <button class="secondary-button" id="skipTodayButton">I need to skip today</button>
+          </div>
+          <div class="saved-line"><span id="todayCompletionStatus"></span><span id="lastSavedToday">Not saved yet</span></div>
+          <button class="text-button" id="logTodayButton">Open detailed log</button>
         </article>
 
         <article class="readiness-card">
-          <div class="score-ring" id="readinessRing"><strong id="readinessScore">0</strong><small>/100</small></div>
+          <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
           <div><p class="eyebrow">Mountain Readiness</p><h2 id="beastTitle">Base Camp Builder</h2><p id="readinessMessage"></p></div>
         </article>
 
@@ -122,10 +154,6 @@
           <div class="form-grid">
             <label class="field"><span>Date</span><input type="date" name="date" required /></label>
             <label class="field"><span>Session type</span><select name="type" id="sessionType" required></select></label>
-            <label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="0" max="1440" required /></label>
-            <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label>
-            <label class="field"><span>Average HR</span><input type="number" name="avgHr" min="40" max="220" /></label>
-            <label class="field"><span>Max HR</span><input type="number" name="maxHr" min="40" max="230" /></label>
           </div>
           <div id="dynamicLogFields"></div>
           <div class="form-grid">
@@ -163,8 +191,16 @@
           <button class="primary-button" type="submit">Save weekly check-in</button>
         </form>
 
+        <article class="card" id="weeklySummaryCard">
+          <div class="card-heading">
+            <div><p class="eyebrow">Current week</p><h2>Weekly summary</h2></div>
+            <span class="status-pill" id="weeklyBadge">Badge locked</span>
+          </div>
+          <div class="summary-grid" id="weeklySummary"></div>
+        </article>
+
         <div class="progress-grid">
-          <article class="card readiness-detail"><p class="eyebrow">Current block</p><strong class="big-number" id="progressScore">0</strong><span id="progressTitle">Base Camp Builder</span><div id="scoreBreakdown"></div></article>
+          <article class="card readiness-detail"><p class="eyebrow">Current block</p><strong class="big-number" id="progressScore">Building baseline...</strong><span id="progressTitle">Log your first few sessions</span><div id="scoreBreakdown"></div></article>
           <article class="card"><p class="eyebrow">Latest metrics</p><div id="latestMetrics"></div></article>
         </div>
         <article class="card"><p class="eyebrow">12-week achievements</p><h2>Badges</h2><div class="badge-grid" id="badgeGrid"></div></article>
@@ -181,12 +217,16 @@
       </section>
     </main>
 
-    <nav class="bottom-nav" aria-label="Primary navigation">
-      <a class="active" href="#today" data-target="today"><span>●</span>Today</a>
-      <a href="#plan" data-target="plan"><span>▦</span>Plan</a>
-      <a href="#log" data-target="log"><span>＋</span>Log</a>
-      <a href="#progress" data-target="progress"><span>↗</span>Progress</a>
-      <a href="#coach" data-target="coach"><span>?</span>Coach</a>
+    <button class="mini-workout" id="miniWorkout" hidden>
+      <span id="miniWorkoutText">Today’s workout</span><strong>Return ↑</strong>
+    </button>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="Primary navigation">
+      <a class="active" href="#today" data-target="today"><span class="nav-icon">●</span><span class="nav-label">Today</span></a>
+      <a href="#plan" data-target="plan"><span class="nav-icon">▦</span><span class="nav-label">Plan</span></a>
+      <a href="#log" data-target="log"><span class="nav-icon">＋</span><span class="nav-label">Log</span></a>
+      <a href="#progress" data-target="progress"><span class="nav-icon">↗</span><span class="nav-label">Progress</span></a>
+      <a href="#coach" data-target="coach"><span class="nav-icon">?</span><span class="nav-label">Coach</span></a>
     </nav>
 
     <dialog id="settingsDialog">
@@ -198,10 +238,23 @@
       <div class="import-summary" id="healthImportSummary"></div>
       <details class="setup-guide"><summary>Apple Watch and GitHub Pages</summary><p>GitHub Pages cannot directly access HealthKit. True automatic sync requires a signed native iPhone companion with user-approved HealthKit permissions. Never commit personal Health exports or backups to a public repository.</p></details>
       <button class="secondary-button" id="exportData">Export private backup</button>
+      <div class="backup-reminder" id="backupReminder"></div>
       <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
       <button class="secondary-button" id="editProfile">Edit profile & start date</button>
+      <div class="app-version"><strong id="appVersion">Mountain Beast</strong><span id="appUpdated"></span></div>
       <button class="danger-button" id="resetData">Reset local data</button>
     </dialog>
+
+    <div class="reward-overlay" id="rewardOverlay" hidden>
+      <section class="reward-card" role="dialog" aria-modal="true" aria-labelledby="rewardTitle">
+        <button class="reward-close" id="rewardClose" aria-label="Close">×</button>
+        <div class="reward-art" id="rewardArt" aria-hidden="true"></div>
+        <p class="eyebrow" id="rewardEyebrow">Training logged</p>
+        <h2 id="rewardTitle">Session complete. Engine built.</h2>
+        <p id="rewardMessage">One more deliberate day in the bank.</p>
+        <button class="primary-button" id="rewardDone">Keep building</button>
+      </section>
+    </div>
 
     <div class="toast" id="toast" role="status"></div>
     <script src="programs.js"></script>
