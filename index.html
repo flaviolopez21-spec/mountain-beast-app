@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#102a25" />
-    <meta
-      name="description"
-      content="A private, local-first tracker for the Mountain Beast Foundation program."
-    />
+    <meta name="description" content="Mountain Beast: private, local-first training blocks." />
     <title>Mountain Beast</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
@@ -16,18 +13,18 @@
     <section class="onboarding" id="onboarding" hidden>
       <form class="onboarding-card" id="onboardingForm">
         <span class="brand-mark">MB</span>
-        <p class="eyebrow">Private setup · stored only here</p>
-        <h1>Build your mountain plan.</h1>
-        <p class="hero-copy">A few honest inputs make the next 12 weeks yours.</p>
+        <p class="eyebrow">Private setup · stays on this device</p>
+        <h1>Build your mountain engine.</h1>
+        <p class="hero-copy">Set your starting point. You can change it later without losing logs.</p>
         <div class="form-grid">
           <label class="field"><span>Height (inches)</span><input name="heightIn" type="number" min="48" max="84" step="0.5" required /></label>
           <label class="field"><span>Current weight (lb)</span><input name="weight" type="number" min="80" max="500" step="0.1" required /></label>
           <label class="field"><span>Goal weight (lb)</span><input name="goalWeight" type="number" min="80" max="500" step="0.1" /></label>
-          <label class="field"><span>Goal body composition</span><input name="goalComposition" placeholder="e.g. 20% body fat, size L" /></label>
+          <label class="field"><span>Goal body composition</span><input name="goalComposition" placeholder="20% body fat, size L..." /></label>
           <label class="field"><span>Gym access</span><select name="gymAccess"><option>Planet Fitness</option><option>Home gym</option><option>Outdoors only</option><option>Full gym</option></select></label>
           <label class="field"><span>Hiking goal</span><select name="hikingGoal"><option>Mount Rainier</option><option>Backpacking</option><option>Snow camping</option><option>General beast mode</option></select></label>
-          <label class="field"><span>Start date</span><input name="startDate" type="date" required /></label>
-          <label class="field"><span>Injuries or pain areas</span><input name="injuries" placeholder="None, knees, back, shins..." /></label>
+          <label class="field"><span>Program start date</span><input name="startDate" type="date" required /></label>
+          <label class="field"><span>Injuries, asthma, or pain areas</span><input name="injuries" placeholder="Asthma, knees, back, shins..." /></label>
         </div>
         <fieldset class="day-picker">
           <legend>Days available</legend>
@@ -39,16 +36,16 @@
           <label><input type="checkbox" name="days" value="6" checked /> Sat</label>
           <label><input type="checkbox" name="days" value="0" /> Sun</label>
         </fieldset>
-        <button class="primary-button" type="submit">Create my 12-week plan</button>
+        <button class="primary-button" type="submit">Start VO₂ Max Rebuild</button>
       </form>
     </section>
 
     <header class="topbar">
       <a class="brand" href="#today" aria-label="Mountain Beast home">
         <span class="brand-mark">MB</span>
-        <span><strong>Mountain Beast</strong><small>12-week foundation</small></span>
+        <span><strong>Mountain Beast</strong><small id="activeProgramLabel">12-Week VO₂ Max Rebuild</small></span>
       </a>
-      <button class="icon-button" id="settingsButton" aria-label="Open data and privacy settings">•••</button>
+      <button class="icon-button" id="settingsButton" aria-label="Open settings">•••</button>
     </header>
 
     <main>
@@ -56,248 +53,158 @@
         <div class="hero">
           <div>
             <p class="eyebrow" id="dateLabel"></p>
-            <h1 id="greeting">Build the chassis.</h1>
+            <h1 id="todayHeadline">Build the engine.</h1>
             <p class="hero-copy" id="phaseLabel"></p>
           </div>
-          <div class="week-ring" id="weekRing" aria-label="Program progress">
-            <span id="weekNumber">1</span>
-            <small>week</small>
-          </div>
+          <div class="week-ring" id="weekRing"><span id="weekNumber">1</span><small>week</small></div>
         </div>
+
+        <article class="card readiness-check" id="readinessCheck">
+          <div class="card-heading">
+            <div><p class="eyebrow">Before training</p><h2>What color is today?</h2></div>
+            <span class="status-pill" id="readinessStatus">Not checked</span>
+          </div>
+          <div class="readiness-buttons">
+            <button data-readiness="green"><strong>Green</strong><span>Normal breathing, decent sleep</span></button>
+            <button data-readiness="yellow"><strong>Yellow</strong><span>Heavy legs, stress, allergies</span></button>
+            <button data-readiness="red"><strong>Red</strong><span>Chest tightness, sharp pain, sick</span></button>
+          </div>
+          <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
+        </article>
 
         <article class="card workout-card">
           <div class="card-heading">
-            <div>
-              <p class="eyebrow" id="todayPurpose"></p>
-              <h2 id="todayWorkout"></h2>
-            </div>
+            <div><p class="eyebrow" id="todayPurpose"></p><h2 id="todayWorkout"></h2></div>
             <span class="status-pill" id="todayStatus">Planned</span>
           </div>
+          <div class="adaptation-banner" id="adaptationBanner"></div>
           <div id="workoutContent"></div>
-          <div id="ruckToday"></div>
-          <label class="field">
-            <span>Workout notes</span>
-            <textarea id="workoutNotes" rows="3" placeholder="How did it feel?"></textarea>
-          </label>
-          <div class="pain-check">
-            <div>
-              <span class="field-label">Pain check</span>
-              <strong id="painValue">0 / 10</strong>
-            </div>
-            <input id="painInput" type="range" min="0" max="10" value="0" />
-            <p id="painGuidance">Green light: form stays normal.</p>
-          </div>
-          <button class="primary-button" id="completeWorkout">Complete workout</button>
+          <label class="field"><span>Session notes</span><textarea id="workoutNotes" rows="3" placeholder="Breathing, pace, confidence, wins..."></textarea></label>
+          <button class="primary-button" id="logTodayButton">Log this session</button>
         </article>
 
-        <article class="readiness-card" id="readinessCard">
+        <article class="readiness-card">
           <div class="score-ring" id="readinessRing"><strong id="readinessScore">0</strong><small>/100</small></div>
-          <div>
-            <p class="eyebrow">Rainier Prep Score</p>
-            <h2 id="beastTitle">Base Camp Builder</h2>
-            <p id="readinessMessage">Complete sessions to build your score.</p>
-          </div>
+          <div><p class="eyebrow">Mountain Readiness</p><h2 id="beastTitle">Base Camp Builder</h2><p id="readinessMessage"></p></div>
         </article>
 
         <div class="metric-grid">
-          <article class="metric-card">
-            <span>Weight</span>
-            <strong id="weightMetric">190.0</strong>
-            <small>lb · manual</small>
-          </article>
-          <article class="metric-card">
-            <span>Est. body fat</span>
-            <strong id="bodyFatMetric">—</strong>
-            <small>Navy estimate</small>
-          </article>
-          <article class="metric-card">
-            <span>Adherence</span>
-            <strong id="adherenceMetric">0%</strong>
-            <small>completed sessions</small>
-          </article>
+          <article class="metric-card"><span>Weekly cardio</span><strong id="cardioMetric">0</strong><small>minutes logged</small></article>
+          <article class="metric-card"><span>Completion</span><strong id="completionMetric">0%</strong><small>this week</small></article>
+          <article class="metric-card"><span>VO₂ max</span><strong id="vo2Metric">28.7</strong><small>latest estimate</small></article>
         </div>
-
-        <article class="card compact-card">
-          <div class="card-heading">
-            <div>
-              <p class="eyebrow">This week</p>
-              <h2>Consistency board</h2>
-            </div>
-          </div>
-          <div class="week-strip" id="weekStrip"></div>
-        </article>
-
-        <article class="card">
-          <p class="eyebrow">Daily fuel & recovery</p>
-          <h2>Don’t break the chain</h2>
-          <div class="habit-grid" id="habitGrid">
-            <label><input type="checkbox" data-habit="protein" /><span>Protein hit</span></label>
-            <label><input type="checkbox" data-habit="calories" /><span>Calories close</span></label>
-            <label><input type="checkbox" data-habit="water" /><span>Water</span></label>
-            <label><input type="checkbox" data-habit="fiber" /><span>Fiber</span></label>
-            <label><input type="checkbox" data-habit="mobility" /><span>Mobility</span></label>
-          </div>
-          <label class="field"><span>Nutrition note</span><input id="nutritionNote" placeholder="Zero-calorie drinks, appetite, meals..." /></label>
-          <div class="streak-row" id="streakRow"></div>
-        </article>
       </section>
 
       <section class="view" id="plan" data-view="plan">
-        <div class="section-heading">
-          <p class="eyebrow">June 15 – September 6, 2026</p>
-          <h1>Your 12-week plan</h1>
-          <p>Progress only when form and joints feel good. Saturday is the cornerstone.</p>
+        <div class="section-heading plan-heading">
+          <div>
+            <p class="eyebrow">Active training block</p>
+            <h1>12-Week VO₂ Max Rebuild</h1>
+            <p>Build the base. Build the engine. Peak the block.</p>
+          </div>
+          <label class="program-select"><span>Program</span><select id="programSelector"></select></label>
         </div>
-        <div class="block-tabs" id="blockTabs">
-          <button class="active" data-block="1">Weeks 1–4</button>
-          <button data-block="2">Weeks 5–8</button>
-          <button data-block="3">Weeks 9–12</button>
+        <div class="phase-tabs" id="phaseTabs">
+          <button class="active" data-phase="1">Weeks 1–4<br /><small>Build the Base</small></button>
+          <button data-phase="2">Weeks 5–8<br /><small>Build the Engine</small></button>
+          <button data-phase="3">Weeks 9–12<br /><small>Peak the Block</small></button>
         </div>
         <div class="plan-list" id="planList"></div>
       </section>
 
-      <section class="view" id="checkin" data-view="checkin">
+      <section class="view" id="log" data-view="log">
         <div class="section-heading">
-          <p class="eyebrow">Same conditions, once a week</p>
-          <h1>Body check-in</h1>
-          <p>Measure relaxed, before breakfast, after using the bathroom.</p>
+          <p class="eyebrow">Local session journal</p>
+          <h1>Log training</h1>
+          <p>Fields adapt to the kind of work you completed.</p>
         </div>
-        <form class="card form-card" id="checkinForm">
+        <form class="card form-card" id="sessionForm">
           <div class="form-grid">
             <label class="field"><span>Date</span><input type="date" name="date" required /></label>
-            <label class="field"><span>Weight (lb)</span><input type="number" name="weight" step="0.1" min="80" max="500" required /></label>
-            <label class="field"><span>Navel (in)</span><input type="number" name="navel" step="0.1" min="20" max="80" required /></label>
-            <label class="field"><span>Neck (in)</span><input type="number" name="neck" step="0.1" min="8" max="30" required /></label>
-            <label class="field"><span>Lower waist (in)</span><input type="number" name="waist" step="0.1" min="20" max="80" /></label>
-            <label class="field"><span>Chest (in)</span><input type="number" name="chest" step="0.1" min="20" max="80" /></label>
-            <label class="field"><span>Hips (in)</span><input type="number" name="hips" step="0.1" min="20" max="80" /></label>
-            <label class="field"><span>Thigh (in)</span><input type="number" name="thigh" step="0.1" min="10" max="50" /></label>
+            <label class="field"><span>Session type</span><select name="type" id="sessionType" required></select></label>
+            <label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="0" max="1440" required /></label>
+            <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label>
+            <label class="field"><span>Average HR</span><input type="number" name="avgHr" min="40" max="220" /></label>
+            <label class="field"><span>Max HR</span><input type="number" name="maxHr" min="40" max="230" /></label>
           </div>
-          <label class="field"><span>Check-in notes</span><textarea name="notes" rows="3" placeholder="Energy, sleep, fit, or recovery notes"></textarea></label>
-          <button class="primary-button" type="submit">Save check-in</button>
-        </form>
-        <div id="checkinHistory"></div>
-
-        <form class="card form-card" id="ruckForm">
-          <p class="eyebrow">Trail log</p>
-          <h2>Log a hike or ruck</h2>
+          <div id="dynamicLogFields"></div>
           <div class="form-grid">
-            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
-            <label class="field"><span>Pack weight (lb)</span><input type="number" name="packWeight" min="0" max="100" step="0.5" required /></label>
-            <label class="field"><span>Miles</span><input type="number" name="miles" min="0" max="100" step="0.1" required /></label>
-            <label class="field"><span>Elevation gain (ft)</span><input type="number" name="elevation" min="0" max="30000" step="10" /></label>
-            <label class="field"><span>Time (minutes)</span><input type="number" name="minutes" min="1" max="1440" required /></label>
-            <label class="field"><span>Difficulty (1–10)</span><input type="number" name="difficulty" min="1" max="10" required /></label>
-            <label class="field"><span>Feet pain (0–10)</span><input type="number" name="feetPain" min="0" max="10" value="0" /></label>
-            <label class="field"><span>Knee pain (0–10)</span><input type="number" name="kneePain" min="0" max="10" value="0" /></label>
-            <label class="field"><span>Back pain (0–10)</span><input type="number" name="backPain" min="0" max="10" value="0" /></label>
-            <label class="field"><span>Terrain</span><select name="terrain"><option>Treadmill incline</option><option>Pavement</option><option>Rolling trail</option><option>Steep trail</option><option>Stairs</option><option>Snow</option></select></label>
+            <label class="field"><span>Energy (1–10)</span><input type="number" name="energy" min="1" max="10" /></label>
+            <label class="field"><span>Confidence (1–10)</span><input type="number" name="confidence" min="1" max="10" /></label>
+            <label class="field"><span>Breathing / asthma</span><select name="breathing"><option>Normal</option><option>Mild symptoms</option><option>Noticeable symptoms</option><option>Stopped session</option></select></label>
+            <label class="field"><span>Pain (0–10)</span><input type="number" name="pain" min="0" max="10" value="0" /></label>
           </div>
-          <label class="field"><span>Terrain and recovery notes</span><textarea name="notes" rows="3"></textarea></label>
-          <button class="primary-button" type="submit">Save hike / ruck</button>
+          <label class="field"><span>Notes</span><textarea name="notes" rows="3" placeholder="Terrain, splits, breathing, victory..."></textarea></label>
+          <button class="primary-button" type="submit">Save session locally</button>
         </form>
-        <div id="ruckHistory"></div>
+        <div id="sessionHistory"></div>
       </section>
 
       <section class="view" id="progress" data-view="progress">
         <div class="section-heading">
-          <p class="eyebrow">Direction over perfection</p>
+          <p class="eyebrow">Trends, not daily judgment</p>
           <h1>Progress</h1>
-          <p>Estimates guide decisions; they are not medical measurements or promises.</p>
+          <p>Compare VO₂ and fitness trends every 2–4 weeks.</p>
         </div>
+        <form class="card form-card" id="weeklyCheckinForm">
+          <div class="card-heading"><div><p class="eyebrow">Weekly check-in</p><h2>Engine metrics</h2></div></div>
+          <div class="form-grid">
+            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
+            <label class="field"><span>VO₂ max estimate</span><input type="number" name="vo2" min="10" max="90" step="0.1" /></label>
+            <label class="field"><span>Resting HR</span><input type="number" name="restingHr" min="30" max="150" /></label>
+            <label class="field"><span>Body weight</span><input type="number" name="weight" min="80" max="500" step="0.1" /></label>
+            <label class="field"><span>Longest walk/hike (miles)</span><input type="number" name="longestDistance" min="0" max="100" step="0.1" /></label>
+            <label class="field"><span>Same-route average HR</span><input type="number" name="routeAvgHr" min="40" max="220" /></label>
+            <label class="field"><span>Energy (1–10)</span><input type="number" name="energy" min="1" max="10" /></label>
+            <label class="field"><span>Sleep quality (1–10)</span><input type="number" name="sleep" min="1" max="10" /></label>
+            <label class="field"><span>Confidence (1–10)</span><input type="number" name="confidence" min="1" max="10" /></label>
+            <label class="field"><span>Asthma / breathing notes</span><input name="breathingNotes" /></label>
+          </div>
+          <button class="primary-button" type="submit">Save weekly check-in</button>
+        </form>
+
         <div class="progress-grid">
-          <article class="card readiness-detail">
-            <p class="eyebrow">Rainier Prep Score</p>
-            <strong class="big-number" id="progressReadiness">0</strong>
-            <span id="progressTitle">Base Camp Builder</span>
-            <div id="scoreBreakdown"></div>
-          </article>
-          <article class="card highlight-card">
-            <p class="eyebrow">Current estimate</p>
-            <strong class="big-number" id="currentBf">—</strong>
-            <span>body fat · ±3–4 percentage points</span>
-            <div class="detail-row"><span>Lean mass estimate</span><strong id="leanMass">—</strong></div>
-            <div class="detail-row"><span>Waist-to-height</span><strong id="waistHeight">—</strong></div>
-          </article>
-          <article class="card">
-            <p class="eyebrow">Daily targets</p>
-            <h2 id="calorieTarget">— kcal</h2>
-            <p class="muted">Moderate starting deficit</p>
-            <div class="target-bar"><span id="proteinBar"></span></div>
-            <div class="detail-row"><span>Protein range</span><strong id="proteinTarget">—</strong></div>
-            <div class="detail-row"><span>Est. maintenance</span><strong id="maintenanceTarget">—</strong></div>
-          </article>
+          <article class="card readiness-detail"><p class="eyebrow">Current block</p><strong class="big-number" id="progressScore">0</strong><span id="progressTitle">Base Camp Builder</span><div id="scoreBreakdown"></div></article>
+          <article class="card"><p class="eyebrow">Latest metrics</p><div id="latestMetrics"></div></article>
         </div>
+        <article class="card"><p class="eyebrow">12-week achievements</p><h2>Badges</h2><div class="badge-grid" id="badgeGrid"></div></article>
+        <article class="card"><p class="eyebrow">Weekly output</p><h2>Cardio minutes & completion</h2><div class="weekly-bars" id="weeklyBars"></div></article>
+      </section>
 
-        <article class="card">
-          <div class="card-heading">
-            <div>
-              <p class="eyebrow">Measurements</p>
-              <h2>Weight & navel trend</h2>
-            </div>
-          </div>
-          <div class="chart" id="trendChart"></div>
-        </article>
-
-        <article class="card">
-          <div class="card-heading">
-            <div>
-              <p class="eyebrow">Planning ranges</p>
-              <h2>12-week outlook</h2>
-            </div>
-          </div>
-          <div class="projection-list" id="projectionList"></div>
-          <p class="fine-print">These ranges assume consistent training and a sustainable calorie deficit. Actual results vary.</p>
-        </article>
-
-        <article class="card">
-          <p class="eyebrow">Clothing milestones</p>
-          <h2>Estimated fit ranges</h2>
-          <div class="milestone">
-            <span class="milestone-icon">L</span>
-            <div><strong>Supima tee: XL → L</strong><p id="shirtEstimate"></p></div>
-          </div>
-          <div class="milestone">
-            <span class="milestone-icon">30</span>
-            <div><strong>Pants: 32 → 30</strong><p id="pantsEstimate"></p></div>
-          </div>
-          <div class="estimate-method" id="clothingMethod"></div>
-        </article>
+      <section class="view" id="coach" data-view="coach">
+        <div class="section-heading">
+          <p class="eyebrow">Reference manual</p>
+          <h1>Your coach</h1>
+          <p>Open only what you need today.</p>
+        </div>
+        <div class="coach-list" id="coachContent"></div>
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="Primary navigation">
       <a class="active" href="#today" data-target="today"><span>●</span>Today</a>
       <a href="#plan" data-target="plan"><span>▦</span>Plan</a>
-      <a href="#checkin" data-target="checkin"><span>＋</span>Check-in</a>
+      <a href="#log" data-target="log"><span>＋</span>Log</a>
       <a href="#progress" data-target="progress"><span>↗</span>Progress</a>
+      <a href="#coach" data-target="coach"><span>?</span>Coach</a>
     </nav>
 
     <dialog id="settingsDialog">
-      <div class="dialog-heading">
-        <div><p class="eyebrow">Local-first</p><h2>Data & privacy</h2></div>
-        <button class="icon-button" id="closeSettings" aria-label="Close settings">×</button>
-      </div>
-      <p>Your entries stay in this browser on this device. No account, analytics, ads, or remote database is used.</p>
-      <div class="notice">
-        <strong>Apple Health</strong>
-        <p>Import an extracted Apple Health <code>export.xml</code> file. It is processed only in this browser and is not uploaded to a server.</p>
-      </div>
+      <div class="dialog-heading"><div><p class="eyebrow">Local-first</p><h2>Settings & privacy</h2></div><button class="icon-button" id="closeSettings" aria-label="Close settings">×</button></div>
+      <label class="field"><span>Active program</span><select id="settingsProgramSelector"></select></label>
+      <p>Your profile, readiness, sessions, Health summaries, and progress stay in this browser. No account, analytics, ads, or remote database.</p>
+      <div class="notice"><strong>Apple Health</strong><p>Import the extracted <code>apple_health_export/export.xml</code>. It is parsed locally and never uploaded.</p></div>
       <label class="secondary-button file-button">Import Apple Health XML<input id="healthImport" type="file" accept=".xml,text/xml,application/xml" /></label>
-      <div class="import-summary" id="healthImportSummary">No Apple Health file imported yet.</div>
-      <details class="setup-guide">
-        <summary>How Apple Watch sync works with GitHub</summary>
-        <p><strong>GitHub Pages hosts the website, but it cannot access HealthKit.</strong> On iPhone, export Health data from the Health app, unzip the export, and choose <code>apple_health_export/export.xml</code> above.</p>
-        <p>True automatic sync requires a signed native iPhone app built with Xcode, HealthKit permissions, and an App Store or personal-device installation. The native app can then pass selected records into this local tracker. Publishing these files to GitHub does not enable that permission.</p>
-        <p>Because this version has no cloud account, iPhone and computer data remain separate. Use private backup export and restore to move data between them. Do not commit personal backup or Health XML files to a public repository.</p>
-      </details>
+      <div class="import-summary" id="healthImportSummary"></div>
+      <details class="setup-guide"><summary>Apple Watch and GitHub Pages</summary><p>GitHub Pages cannot directly access HealthKit. True automatic sync requires a signed native iPhone companion with user-approved HealthKit permissions. Never commit personal Health exports or backups to a public repository.</p></details>
       <button class="secondary-button" id="exportData">Export private backup</button>
       <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
-      <button class="secondary-button" id="editProfile">Edit training setup</button>
+      <button class="secondary-button" id="editProfile">Edit profile & start date</button>
       <button class="danger-button" id="resetData">Reset local data</button>
     </dialog>
 
     <div class="toast" id="toast" role="status"></div>
+    <script src="programs.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
