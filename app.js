@@ -1,6 +1,6 @@
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.5.0";
+const APP_VERSION = "0.6.0";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -44,7 +44,10 @@ function initialState() {
     rucks: [],
     habits: {},
     healthImport: null,
-    meta: { lastSavedAt: null, lastBackupAt: null, lastTab: "today", lastOpenedDate: null, todayNotes: {} }
+    meta: {
+      lastSavedAt: null, lastBackupAt: null, lastTab: "today", lastOpenedDate: null, todayNotes: {},
+      badgeUnlocksShown: {}, badgeUnlockedAt: {}, timer: null
+    }
   };
 }
 
@@ -69,6 +72,9 @@ function migrate(raw) {
   next.meta.lastTab ??= "today";
   next.meta.lastOpenedDate ??= null;
   next.meta.todayNotes ??= {};
+  next.meta.badgeUnlocksShown ??= {};
+  next.meta.badgeUnlockedAt ??= {};
+  next.meta.timer ??= null;
   return next;
 }
 
@@ -177,7 +183,10 @@ function weeklyStats(week = currentWeek()) {
     .reduce((sum, log) => sum + Number(log.minutes || 0), 0);
   const uniqueDates = new Set(logs.filter(log => log.type !== "Rest").map(log => log.date)).size;
   const plannedSessions = activeProgram().weeks[week - 1].days.filter(day => day.type !== "Rest").length;
-  return { logs, cardio, completion: Math.min(100, Math.round(uniqueDates / plannedSessions * 100)) };
+  const chassisTypes = ["Strength A", "Strength B", "Mobility"];
+  const chassis = logs.filter(log => chassisTypes.includes(log.type)).length;
+  const plannedChassis = activeProgram().weeks[week - 1].days.filter(day => chassisTypes.includes(day.type)).length;
+  return { logs, cardio, uniqueDates, plannedSessions, chassis, plannedChassis, completion: Math.min(100, Math.round(uniqueDates / plannedSessions * 100)) };
 }
 function badgeEarned(week) {
   const stats = weeklyStats(week);
@@ -185,6 +194,33 @@ function badgeEarned(week) {
 }
 function earnedBadgeWeeks() {
   return new Set(activeProgram().badges.map((_, index) => index + 1).filter(badgeEarned));
+}
+function programMetaBucket(key) {
+  state.meta[key][state.selectedProgram] ??= {};
+  return state.meta[key][state.selectedProgram];
+}
+function badgeRequirement(week) {
+  return week === 1 ? "Log your first training session." : "Complete at least 50% of the planned sessions for this week.";
+}
+function badgeProgress(week) {
+  const stats = weeklyStats(week);
+  const required = week === 1 ? 1 : Math.ceil(stats.plannedSessions * .5);
+  const completed = week === 1 ? Math.min(1, stats.logs.filter(log => log.type !== "Rest").length) : Math.min(required, stats.uniqueDates);
+  return { completed, required, percent: Math.min(100, Math.round(completed / Math.max(1, required) * 100)) };
+}
+function badgeUnlockDate(week) {
+  return programMetaBucket("badgeUnlockedAt")[week] || null;
+}
+function syncBadgeUnlockDates() {
+  const bucket = programMetaBucket("badgeUnlockedAt");
+  let changed = false;
+  earnedBadgeWeeks().forEach(week => {
+    if (bucket[week]) return;
+    const logs = sessionsForWeek(week).filter(log => log.type !== "Rest").sort((a, b) => a.date.localeCompare(b.date));
+    bucket[week] = logs.at(-1)?.date || dateKey(today());
+    changed = true;
+  });
+  if (changed) saveState();
 }
 function badgeIcon(kind) {
   const common = `viewBox="0 0 64 64" role="img" aria-hidden="true"`;
@@ -207,10 +243,12 @@ function badgeIcon(kind) {
 function badgeMarkup(week, earned, featured = false) {
   const name = activeProgram().badges[week - 1];
   const [kind, description] = BADGE_META[week - 1];
-  return `<article class="badge ${earned ? "earned" : "locked"} ${featured ? "featured" : ""}">
+  const progress = badgeProgress(week);
+  const current = week === currentWeek() && !earned;
+  return `<button type="button" class="badge ${earned ? "earned" : current ? "in-progress" : "locked"} ${featured ? "featured" : ""}" data-badge-week="${week}" ${featured ? 'tabindex="-1"' : ""} aria-label="Week ${week}: ${name}. ${earned ? "Unlocked" : current ? "In progress" : "Locked"}">
     <div class="badge-patch">${badgeIcon(kind)}<span class="badge-week">W${week}</span>${earned ? '<i class="badge-check">✓</i>' : '<i class="badge-lock" aria-label="Locked"></i>'}</div>
-    <div class="badge-copy"><small>${earned ? "Unlocked" : `Unlock in Week ${week}`}</small><strong>${name}</strong><p>${description}</p></div>
-  </article>`;
+    <div class="badge-copy"><small>${earned ? "Unlocked" : current ? `${progress.percent}% in progress` : `Unlock in Week ${week}`}</small><strong>${name}</strong><p>${description}</p></div>
+  </button>`;
 }
 function setRingProgress(selector, degrees) {
   const ring = document.querySelector(selector);
@@ -263,6 +301,8 @@ function renderToday() {
   document.querySelector("#phaseLabel").textContent = `Week ${raw.week}, Day ${raw.day} · ${phaseName(raw.weekData.phase)} · ${raw.weekData.theme}`;
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
   document.querySelector("#activeProgramLabel").textContent = `Current Mission: ${activeProgram().name}`;
+  const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
+  document.querySelector("#headerTodayLabel").textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
   document.querySelector("#weekNumber").textContent = raw.week;
   setRingProgress("#weekRing", raw.week / 12 * 360);
   document.querySelector("#todayPurpose").textContent = `Week ${raw.week}, Day ${raw.day} · ${raw.type}`;
@@ -273,12 +313,16 @@ function renderToday() {
     ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>${plan.minutes} min</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message"><strong>Adjustment: Yellow day, reduced about 35%.</strong> Goal: ${plan.adaptation}</div>`
     : readiness.color === "red"
       ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>Rest / ${plan.minutes} min easy</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message">${plan.adaptation}</div>`
-      : "Green plan: complete today’s exact workout as written.";
+      : `<div class="adaptation-comparison"><div><span>Original</span><strong>${raw.minutes} min</strong></div><div><span>Today</span><strong>${raw.minutes} min</strong></div><div><span>Adjustment</span><strong>Full plan</strong></div></div><div class="adaptation-message">Green day: keep the effort controlled and complete the plan as written.</div>`;
   document.querySelector("#adaptationBanner").className = `adaptation-banner ${readiness.color || "neutral"}`;
   document.querySelector("#workoutContent").innerHTML = workoutDetails(plan);
   document.querySelector("#workoutNotes").value = matching?.notes || state.meta.todayNotes[dateKey(date)] || "";
   document.querySelector("#readinessNote").value = readiness.note || "";
-  document.querySelectorAll("[data-readiness]").forEach(button => button.classList.toggle("active", button.dataset.readiness === readiness.color));
+  document.querySelectorAll("[data-readiness]").forEach(button => {
+    const selected = button.dataset.readiness === readiness.color;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
   const status = document.querySelector("#readinessStatus");
   status.textContent = readiness.color ? `${readiness.color[0].toUpperCase()}${readiness.color.slice(1)} day` : "Not checked";
   status.className = `status-pill ${readiness.color || ""}`;
@@ -295,13 +339,40 @@ function renderToday() {
   document.querySelector("#vo2Metric").textContent = latestVo2().toFixed(1);
   document.querySelector("#completeTodayButton").textContent = completed ? "Completed today ✓" : "Complete Session";
   document.querySelector("#completeTodayButton").disabled = completed;
+  document.querySelector("#completeTodayButton").classList.toggle("completed", completed);
   document.querySelector("#todayCompletionStatus").textContent = matching?.status === "skipped"
     ? "Protected the streak. Tomorrow is still alive."
     : completed ? "Session complete. Nice work." : "";
+  renderCompletionRecap(matching, raw, plan, readiness);
   document.querySelector("#intervalTimerButton").hidden = raw.type !== "VO₂ Intervals";
   document.querySelector("#miniWorkoutText").textContent = `Today: ${plan.title} · ${plan.minutes} min · ${readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green"}`;
   document.querySelector("#miniWorkout").hidden = false;
   renderSavedState();
+}
+
+function renderCompletionRecap(session, raw, plan, readiness) {
+  const recap = document.querySelector("#completionRecap");
+  if (!session || session.status !== "completed") {
+    recap.hidden = true;
+    return;
+  }
+  const stats = weeklyStats(raw.week);
+  const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
+  const adjustment = plan.originalMinutes
+    ? `${readinessName} day: ${plan.minutes} from ${plan.originalMinutes} min`
+    : `${readinessName} day: full plan`;
+  const progress = badgeProgress(raw.week);
+  document.querySelector("#completionRecapContent").innerHTML = [
+    ["Session", session.plannedType || session.type],
+    ["Training time", `${session.minutes || 0} min`],
+    ["Adjustment", adjustment],
+    ["Readiness", readinessName],
+    ["Notes", session.notes ? "Saved locally ✓" : "No notes added"],
+    ["Engine", `+${["Strength A","Strength B","Mobility","Rest"].includes(session.type) ? 0 : session.minutes || 0} min`],
+    ["Week progress", `${stats.uniqueDates} / ${stats.plannedSessions} sessions`],
+    ["Badge progress", `${progress.completed} / ${progress.required}`]
+  ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  recap.hidden = false;
 }
 
 function phaseName(phase) { return phase === 1 ? "Build the Base" : phase === 2 ? "Build the Engine" : "Peak the Block"; }
@@ -395,6 +466,7 @@ function latestRestingHr() {
   return Number(checkin?.restingHr || health?.value || 0);
 }
 function renderProgress() {
+  syncBadgeUnlockDates();
   const score = readinessScore();
   const checkin = latest(state.weeklyCheckins) || {};
   const body = latest(state.checkins) || {};
@@ -422,9 +494,28 @@ function renderProgress() {
     const height = Math.min(100, Math.round(stats.cardio / Math.max(1, plannedCardioMinutes(index + 1)) * 100));
     return `<div class="weekly-column"><div class="weekly-bar"><i style="height:${height}%"></i></div><strong>W${index + 1}</strong><small>${stats.cardio}m · ${stats.completion}%</small></div>`;
   }).join("");
+  renderSystemRings();
   renderWeeklySummary();
   const form = document.querySelector("#weeklyCheckinForm");
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
+}
+
+function renderSystemRings() {
+  const week = currentWeek();
+  const stats = weeklyStats(week);
+  const cardioTarget = plannedCardioMinutes(week);
+  const chassisTarget = Math.max(1, stats.plannedChassis);
+  const values = [
+    ["#engineRing", Math.min(100, stats.cardio / Math.max(1, cardioTarget) * 100), "#engineRingValue", stats.cardio, "#engineRingLabel", `${stats.cardio} / ${cardioTarget} cardio min`],
+    ["#chassisRing", Math.min(100, stats.chassis / chassisTarget * 100), "#chassisRingValue", stats.chassis, "#chassisRingLabel", `${stats.chassis} / ${chassisTarget} durability session${chassisTarget === 1 ? "" : "s"}`],
+    ["#consistencyRing", Math.min(100, stats.uniqueDates / Math.max(1, stats.plannedSessions) * 100), "#consistencyRingValue", stats.uniqueDates, "#consistencyRingLabel", `${stats.uniqueDates} / ${stats.plannedSessions} planned sessions`]
+  ];
+  values.forEach(([ring, percent, valueEl, value, labelEl, label]) => {
+    setRingProgress(ring, percent * 3.6);
+    document.querySelector(valueEl).textContent = value;
+    document.querySelector(labelEl).textContent = label;
+    document.querySelector(ring).setAttribute("aria-label", label);
+  });
 }
 
 function renderWeeklySummary() {
@@ -503,7 +594,12 @@ function showOnboarding() {
 }
 function navigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
-  document.querySelectorAll(".bottom-nav a").forEach(link => link.classList.toggle("active", link.dataset.target === target));
+  document.querySelectorAll(".bottom-nav a").forEach(link => {
+    const active = link.dataset.target === target;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
   if (target === "today") renderToday();
   if (target === "plan") renderPlan(Number(document.querySelector("#phaseTabs .active")?.dataset.phase || 1));
   if (target === "log") renderLog();
@@ -529,9 +625,13 @@ function showReward(badgeWeek = null) {
     document.querySelector("#rewardMessage").textContent = BADGE_META[badgeWeek - 1][1];
     art.innerHTML = badgeMarkup(badgeWeek, true, true);
   } else {
+    const readiness = currentReadiness().color || "green";
+    const copy = readiness === "yellow"
+      ? "Yellow day handled correctly. Consistency over ego."
+      : readiness === "red" ? "You protected the streak and lived to train tomorrow." : "Another vote for future you.";
     document.querySelector("#rewardEyebrow").textContent = "Training logged";
     document.querySelector("#rewardTitle").textContent = "Session complete. Engine built.";
-    document.querySelector("#rewardMessage").textContent = `+1 deliberate day toward the Week ${currentWeek()} patch.`;
+    document.querySelector("#rewardMessage").textContent = `${copy} Week ${currentWeek()} progress updated.`;
     art.innerHTML = `<div class="completion-mark"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="m13 62 22-35 11 15 9-18 13 38z"/><path class="detail" d="m28 50 8 8 18-22"/></svg></div>`;
   }
   overlay.hidden = false;
@@ -544,9 +644,41 @@ function closeReward() {
   setTimeout(() => { overlay.hidden = true; }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180);
 }
 function showNewBadge(before) {
-  const newlyEarned = [...earnedBadgeWeeks()].find(week => !before.has(week));
-  if (newlyEarned) showReward(newlyEarned);
+  syncBadgeUnlockDates();
+  const shown = programMetaBucket("badgeUnlocksShown");
+  const newlyEarned = [...earnedBadgeWeeks()].find(week => !before.has(week) && !shown[week]);
+  if (newlyEarned) {
+    shown[newlyEarned] = true;
+    saveState();
+    showReward(newlyEarned);
+  }
   return newlyEarned;
+}
+
+function showBadgeDetails(week) {
+  const earned = badgeEarned(week);
+  const current = week === currentWeek() && !earned;
+  const [kind, description] = BADGE_META[week - 1];
+  const progress = badgeProgress(week);
+  const unlockDate = badgeUnlockDate(week);
+  document.querySelector("#badgeDetailArt").innerHTML = badgeMarkup(week, earned, true);
+  document.querySelector("#badgeDetailStatus").textContent = earned ? `Week ${week} · Unlocked` : current ? `Week ${week} · In progress` : `Week ${week} · Locked`;
+  document.querySelector("#badgeDetailTitle").textContent = activeProgram().badges[week - 1];
+  document.querySelector("#badgeDetailDescription").textContent = description;
+  document.querySelector("#badgeDetailFacts").innerHTML = [
+    ["Requirement", badgeRequirement(week)],
+    ["Progress", `${progress.completed} / ${progress.required} sessions (${progress.percent}%)`],
+    ["Unlock date", unlockDate ? atNoon(unlockDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Not unlocked yet"]
+  ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  const overlay = document.querySelector("#badgeDetailOverlay");
+  overlay.hidden = false;
+  requestAnimationFrame(() => overlay.classList.add("visible"));
+  document.querySelector("#badgeDetailDone").focus();
+}
+function closeBadgeDetails() {
+  const overlay = document.querySelector("#badgeDetailOverlay");
+  overlay.classList.remove("visible");
+  setTimeout(() => { overlay.hidden = true; }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180);
 }
 
 function renderSavedState() {
@@ -560,8 +692,8 @@ function renderSavedState() {
   const days = backupTime ? Math.floor((Date.now() - backupTime.getTime()) / 86400000) : Infinity;
   reminder.classList.toggle("fresh", days < 7);
   reminder.textContent = days < 7
-    ? `Private backup exported ${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}.`
-    : "You haven’t backed up in 7 days. Export a private backup.";
+    ? `Your data lives on this device. Private backup exported ${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}.`
+    : "Your data lives on this device. You haven’t backed up in 7 days. Export a private backup.";
 }
 
 function upsertTodaySession(status) {
@@ -596,7 +728,8 @@ function upsertTodaySession(status) {
 
 const timerState = {
   intervalId: null, remaining: 0, running: false,
-  phases: [], phaseIndex: 0, totalRounds: 1
+  phases: [], phaseIndex: 0, totalRounds: 1, kind: null,
+  deadline: null, totalSeconds: 0
 };
 
 function timerText(seconds) {
@@ -624,33 +757,73 @@ function intervalPhases(plan) {
 }
 function renderTimer() {
   const phase = timerState.phases[timerState.phaseIndex];
-  document.querySelector("#timerPhase").textContent = phase?.label || "Timer";
+  const next = timerState.phases[timerState.phaseIndex + 1];
+  const completedSeconds = timerState.phases.slice(0, timerState.phaseIndex).reduce((sum, item) => sum + item.seconds, 0);
+  const phaseElapsed = phase ? Math.max(0, phase.seconds - timerState.remaining) : 0;
+  const percent = timerState.totalSeconds ? Math.min(100, Math.round((completedSeconds + phaseElapsed) / timerState.totalSeconds * 100)) : 0;
+  document.querySelector("#timerPhase").textContent = phase?.label || "Timer complete";
   document.querySelector("#timerDisplay").textContent = timerText(timerState.remaining);
   document.querySelector("#timerRound").textContent = timerState.totalRounds > 1
     ? `Round ${phase?.round || 1} of ${timerState.totalRounds}` : "";
+  document.querySelector("#timerNext").textContent = next ? `Next: ${timerText(next.seconds)} ${next.label.toLowerCase()}` : phase ? "Final phase" : "Ready to log";
+  document.querySelector("#timerProgress").style.width = `${percent}%`;
   document.querySelector("#timerPause").textContent = timerState.running ? "Pause" : "Resume";
-  document.querySelector("#timerPanel").classList.toggle("hard-phase", timerState.running && phase?.label === "Hard interval");
+  document.querySelector("#timerPause").disabled = !phase;
+  const panel = document.querySelector("#timerPanel");
+  panel.classList.toggle("hard-phase", timerState.running && phase?.label === "Hard interval");
+  panel.classList.toggle("easy-phase", timerState.running && phase?.label === "Easy recovery");
+  document.querySelector("#timerFinish").hidden = !!phase;
 }
-function stopTimer(hide = true) {
+function persistTimer() {
+  state.meta.timer = timerState.phases.length ? {
+    kind: timerState.kind, phases: timerState.phases, phaseIndex: timerState.phaseIndex,
+    remaining: timerState.remaining, running: timerState.running, totalRounds: timerState.totalRounds,
+    deadline: timerState.deadline, totalSeconds: timerState.totalSeconds,
+    programId: state.selectedProgram, date: dateKey(activeDate())
+  } : null;
+  saveState();
+}
+function stopTimer(hide = true, clear = false) {
   clearInterval(timerState.intervalId);
   timerState.intervalId = null;
   timerState.running = false;
+  timerState.deadline = null;
+  if (clear) {
+    Object.assign(timerState, { remaining: 0, phases: [], phaseIndex: 0, totalRounds: 1, kind: null, totalSeconds: 0 });
+    state.meta.timer = null;
+    saveState();
+    document.querySelector("#timerFinish").hidden = true;
+  } else {
+    persistTimer();
+  }
   if (hide) document.querySelector("#timerPanel").hidden = true;
 }
-function tickTimer() {
-  timerState.remaining -= 1;
-  if (timerState.remaining <= 0) {
+function reconcileTimer() {
+  if (!timerState.running || !timerState.deadline) return;
+  let remaining = Math.ceil((timerState.deadline - Date.now()) / 1000);
+  while (remaining <= 0) {
+    const overrun = Math.abs(remaining);
     timerState.phaseIndex += 1;
     const next = timerState.phases[timerState.phaseIndex];
     if (!next) {
-      stopTimer(false);
+      clearInterval(timerState.intervalId);
+      timerState.intervalId = null;
+      timerState.running = false;
+      timerState.deadline = null;
       timerState.remaining = 0;
+      persistTimer();
       renderTimer();
       toast("Timer complete ✓");
       return;
     }
-    timerState.remaining = next.seconds;
+    remaining = next.seconds - overrun;
+    timerState.deadline = Date.now() + Math.max(0, remaining) * 1000;
+    persistTimer();
   }
+  timerState.remaining = remaining;
+}
+function tickTimer() {
+  reconcileTimer();
   renderTimer();
 }
 function startTimer(kind) {
@@ -672,10 +845,31 @@ function startTimer(kind) {
       round: 1
     }];
   }
-  Object.assign(timerState, { phases, phaseIndex: 0, remaining: phases[0].seconds, running: true, totalRounds });
+  const totalSeconds = phases.reduce((sum, phase) => sum + phase.seconds, 0);
+  Object.assign(timerState, {
+    kind, phases, phaseIndex: 0, remaining: phases[0].seconds, running: true, totalRounds,
+    deadline: Date.now() + phases[0].seconds * 1000, totalSeconds
+  });
   document.querySelector("#timerPanel").hidden = false;
+  document.querySelector("#timerFinish").hidden = true;
+  persistTimer();
   renderTimer();
   timerState.intervalId = setInterval(tickTimer, 1000);
+}
+function resetTimer() {
+  if (timerState.kind) startTimer(timerState.kind);
+}
+function restoreTimer() {
+  const saved = state.meta.timer;
+  if (!saved || saved.programId !== state.selectedProgram || saved.date !== dateKey(activeDate())) return;
+  clearInterval(timerState.intervalId);
+  Object.assign(timerState, saved, { intervalId: null });
+  document.querySelector("#timerPanel").hidden = false;
+  if (timerState.running) {
+    reconcileTimer();
+    if (timerState.running) timerState.intervalId = setInterval(tickTimer, 1000);
+  }
+  renderTimer();
 }
 
 const bottomNav = document.querySelector("#bottomNav");
@@ -750,7 +944,15 @@ document.querySelector("#readinessNote").addEventListener("change", event => {
   state.readiness[dateKey(activeDate())] = { color: current.color, note: event.target.value.trim() };
   savedLocally();
 });
+let noteSaveTimer = null;
+document.querySelector("#workoutNotes").addEventListener("input", event => {
+  state.meta.todayNotes[dateKey(activeDate())] = event.target.value;
+  saveState();
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(() => savedLocally(), 700);
+});
 document.querySelector("#workoutNotes").addEventListener("change", event => {
+  clearTimeout(noteSaveTimer);
   state.meta.todayNotes[dateKey(activeDate())] = event.target.value.trim();
   savedLocally();
 });
@@ -778,16 +980,31 @@ document.querySelector("#skipTodayButton").addEventListener("click", () => {
 document.querySelectorAll("[data-timer-kind]").forEach(button => button.addEventListener("click", () => startTimer(button.dataset.timerKind)));
 document.querySelector("#timerPause").addEventListener("click", () => {
   if (timerState.running) {
+    reconcileTimer();
     clearInterval(timerState.intervalId);
     timerState.intervalId = null;
     timerState.running = false;
+    timerState.deadline = null;
   } else if (timerState.remaining > 0) {
     timerState.running = true;
+    timerState.deadline = Date.now() + timerState.remaining * 1000;
     timerState.intervalId = setInterval(tickTimer, 1000);
   }
+  persistTimer();
   renderTimer();
 });
-document.querySelector("#timerStop").addEventListener("click", () => stopTimer());
+document.querySelector("#timerReset").addEventListener("click", resetTimer);
+document.querySelector("#timerStop").addEventListener("click", () => stopTimer(true, true));
+document.querySelector("#timerFinish").addEventListener("click", () => {
+  stopTimer(true, true);
+  document.querySelector("#logTodayButton").click();
+});
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && timerState.running) {
+    reconcileTimer();
+    renderTimer();
+  }
+});
 document.querySelector("#miniWorkout").addEventListener("click", () => {
   expandNavForInteraction();
   document.querySelector("#todayWorkoutCard").scrollIntoView({
@@ -800,8 +1017,18 @@ document.querySelector("#rewardDone").addEventListener("click", closeReward);
 document.querySelector("#rewardOverlay").addEventListener("click", event => {
   if (event.target === event.currentTarget) closeReward();
 });
+document.querySelector("#badgeGrid").addEventListener("click", event => {
+  const badge = event.target.closest("[data-badge-week]");
+  if (badge) showBadgeDetails(Number(badge.dataset.badgeWeek));
+});
+document.querySelector("#badgeDetailClose").addEventListener("click", closeBadgeDetails);
+document.querySelector("#badgeDetailDone").addEventListener("click", closeBadgeDetails);
+document.querySelector("#badgeDetailOverlay").addEventListener("click", event => {
+  if (event.target === event.currentTarget) closeBadgeDetails();
+});
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !document.querySelector("#rewardOverlay").hidden) closeReward();
+  if (event.key === "Escape" && !document.querySelector("#badgeDetailOverlay").hidden) closeBadgeDetails();
 });
 document.querySelector("#logTodayButton").addEventListener("click", () => {
   navigate("log"); history.replaceState(null, "", "#log");
@@ -920,6 +1147,7 @@ function renderHealthSummary() {
 }
 function renderAll() {
   renderProgramSelectors(); populateSessionTypes(); renderToday(); renderPlan(); renderLog(); renderProgress(); renderCoach(); renderHealthSummary();
+  restoreTimer();
   renderSavedState();
   const todayKey = dateKey(today());
   const sameDay = state.meta.lastOpenedDate === todayKey;

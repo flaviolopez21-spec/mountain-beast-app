@@ -1,4 +1,4 @@
-const CACHE = "mountain-beast-v8";
+const CACHE = "mountain-beast-v9";
 const ASSETS = ["./", "./index.html", "./styles.css", "./programs.js", "./app.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {

@@ -11,7 +11,7 @@
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
-      <span><strong>New version available</strong><small>Your local data will stay intact.</small></span>
+      <span><strong>New Mountain Beast version available.</strong><small>Your local data will stay intact.</small></span>
       <button id="updateNow">Update now</button>
     </div>
 
@@ -52,6 +52,7 @@
           <strong>Mountain Beast</strong>
           <small id="activeProgramLabel">Current Mission: 12-Week VO₂ Max Rebuild</small>
           <small id="headerWeekLabel">Week 1 of 12</small>
+          <small id="headerTodayLabel">Today: loading mission…</small>
         </span>
       </a>
       <button class="icon-button" id="settingsButton" aria-label="Open settings">•••</button>
@@ -74,9 +75,9 @@
             <span class="status-pill" id="readinessStatus">Not checked</span>
           </div>
           <div class="readiness-buttons">
-            <button data-readiness="green"><strong>Green</strong><span>Normal breathing, decent sleep</span></button>
-            <button data-readiness="yellow"><strong>Yellow</strong><span>Heavy legs, stress, allergies</span></button>
-            <button data-readiness="red"><strong>Red</strong><span>Chest tightness, sharp pain, sick</span></button>
+            <button data-readiness="green" aria-pressed="false"><strong>Green</strong><span>Normal breathing, decent sleep</span></button>
+            <button data-readiness="yellow" aria-pressed="false"><strong>Yellow</strong><span>Heavy legs, stress, allergies</span></button>
+            <button data-readiness="red" aria-pressed="false"><strong>Red</strong><span>Chest tightness, sharp pain, sick</span></button>
           </div>
           <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
         </article>
@@ -94,17 +95,21 @@
             <button data-timer-kind="cooldown">Cool-down timer</button>
             <button data-timer-kind="interval" id="intervalTimerButton">Interval timer</button>
           </div>
-          <div class="timer-panel" id="timerPanel" hidden>
+          <div class="timer-panel" id="timerPanel" role="timer" aria-live="polite" hidden>
             <div>
               <p class="eyebrow" id="timerPhase">Timer</p>
               <strong id="timerDisplay">00:00</strong>
               <span id="timerRound"></span>
+              <span id="timerNext"></span>
+              <div class="timer-progress" aria-hidden="true"><i id="timerProgress"></i></div>
             </div>
             <div class="timer-actions">
               <button id="timerPause">Pause</button>
-              <button id="timerStop">Stop</button>
+              <button id="timerReset">Reset</button>
+              <button id="timerStop">Close</button>
             </div>
           </div>
+          <button class="timer-finish" id="timerFinish" hidden>Finish and log session</button>
           <label class="field"><span>Session notes</span><textarea id="workoutNotes" rows="3" placeholder="Breathing, pace, confidence, wins..."></textarea></label>
           <div class="today-actions">
             <button class="primary-button" id="completeTodayButton">Complete Session</button>
@@ -113,6 +118,14 @@
           </div>
           <div class="saved-line"><span id="todayCompletionStatus"></span><span id="lastSavedToday">Not saved yet</span></div>
           <button class="text-button" id="logTodayButton">Open detailed log</button>
+        </article>
+
+        <article class="card completion-recap" id="completionRecap" aria-live="polite" hidden>
+          <div class="card-heading">
+            <div><p class="eyebrow">Mountain Beast progress saved</p><h2>Session Complete</h2></div>
+            <span class="status-pill done">Complete ✓</span>
+          </div>
+          <div class="recap-grid" id="completionRecapContent"></div>
         </article>
 
         <article class="readiness-card">
@@ -199,6 +212,15 @@
           <div class="summary-grid" id="weeklySummary"></div>
         </article>
 
+        <article class="card system-rings-card">
+          <div class="card-heading"><div><p class="eyebrow">This week</p><h2>Engine · Chassis · Consistency</h2></div></div>
+          <div class="system-rings" id="systemRings">
+            <div class="system-ring-item"><div class="system-ring engine" id="engineRing"><strong id="engineRingValue">0</strong><small>min</small></div><div><strong>Engine</strong><span id="engineRingLabel">0 / 0 cardio min</span></div></div>
+            <div class="system-ring-item"><div class="system-ring chassis" id="chassisRing"><strong id="chassisRingValue">0</strong><small>done</small></div><div><strong>Chassis</strong><span id="chassisRingLabel">0 / 2 durability sessions</span></div></div>
+            <div class="system-ring-item"><div class="system-ring consistency" id="consistencyRing"><strong id="consistencyRingValue">0</strong><small>done</small></div><div><strong>Consistency</strong><span id="consistencyRingLabel">0 / 6 planned sessions</span></div></div>
+          </div>
+        </article>
+
         <div class="progress-grid">
           <article class="card readiness-detail"><p class="eyebrow">Current block</p><strong class="big-number" id="progressScore">Building baseline...</strong><span id="progressTitle">Log your first few sessions</span><div id="scoreBreakdown"></div></article>
           <article class="card"><p class="eyebrow">Latest metrics</p><div id="latestMetrics"></div></article>
@@ -253,6 +275,18 @@
         <h2 id="rewardTitle">Session complete. Engine built.</h2>
         <p id="rewardMessage">One more deliberate day in the bank.</p>
         <button class="primary-button" id="rewardDone">Keep building</button>
+      </section>
+    </div>
+
+    <div class="reward-overlay" id="badgeDetailOverlay" hidden>
+      <section class="reward-card badge-detail-card" role="dialog" aria-modal="true" aria-labelledby="badgeDetailTitle">
+        <button class="reward-close" id="badgeDetailClose" aria-label="Close badge details">×</button>
+        <div class="reward-art" id="badgeDetailArt" aria-hidden="true"></div>
+        <p class="eyebrow" id="badgeDetailStatus">Week badge</p>
+        <h2 id="badgeDetailTitle">Badge details</h2>
+        <p id="badgeDetailDescription"></p>
+        <div class="badge-detail-facts" id="badgeDetailFacts"></div>
+        <button class="primary-button" id="badgeDetailDone">Done</button>
       </section>
     </div>
 
