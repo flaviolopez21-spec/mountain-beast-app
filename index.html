@@ -3,31 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#102a25" />
-    <meta name="description" content="Mountain Beast: private, local-first training blocks." />
-    <title>Mountain Beast</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.6.2" />
-    <link rel="stylesheet" href="./styles.css?v=0.6.2" />
+    <meta name="theme-color" content="#183c35" />
+    <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
+    <title>TrainFor</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=0.8.0" />
+    <link rel="stylesheet" href="./styles.css?v=0.8.0" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
-      <span><strong>New Mountain Beast version available.</strong><small>Your local data will stay intact.</small></span>
+      <span><strong>A new TrainFor version is ready.</strong><small>Your local data will stay intact.</small></span>
       <button id="updateNow">Update now</button>
     </div>
 
     <section class="onboarding" id="onboarding" hidden>
       <form class="onboarding-card" id="onboardingForm">
-        <span class="brand-mark">MB</span>
-        <p class="eyebrow">Private setup · stays on this device</p>
-        <h1>Build your mountain engine.</h1>
-        <p class="hero-copy">Set your starting point. You can change it later without losing logs.</p>
+        <span class="brand-mark" aria-hidden="true"><span>TF</span></span>
+        <p class="eyebrow">TrainFor · private setup</p>
+        <h1>What are you training for?</h1>
+        <p class="hero-copy">Train for the mountain. Train for health. Train for the life you want to keep living.</p>
         <div class="form-grid">
           <label class="field"><span>Height (inches)</span><input name="heightIn" type="number" min="48" max="84" step="0.5" required /></label>
           <label class="field"><span>Current weight (lb)</span><input name="weight" type="number" min="80" max="500" step="0.1" required /></label>
           <label class="field"><span>Goal weight (lb)</span><input name="goalWeight" type="number" min="80" max="500" step="0.1" /></label>
           <label class="field"><span>Goal body composition</span><input name="goalComposition" placeholder="20% body fat, size L..." /></label>
           <label class="field"><span>Gym access</span><select name="gymAccess"><option>Planet Fitness</option><option>Home gym</option><option>Outdoors only</option><option>Full gym</option></select></label>
-          <label class="field"><span>Hiking goal</span><select name="hikingGoal"><option>Mount Rainier</option><option>Backpacking</option><option>Snow camping</option><option>General beast mode</option></select></label>
+          <label class="field"><span>Training for</span><select name="hikingGoal"><option>Health + Mountain</option><option>Mount Rainier</option><option>5K</option><option>Longevity</option><option>Strength base</option><option>Conditioning</option><option>Backpacking</option><option>Snow camping</option></select></label>
           <label class="field"><span>Program start date</span><input name="startDate" type="date" required /></label>
           <label class="field"><span>Injuries, asthma, or pain areas</span><input name="injuries" placeholder="Asthma, knees, back, shins..." /></label>
         </div>
@@ -41,18 +41,19 @@
           <label><input type="checkbox" name="days" value="6" checked /> Sat</label>
           <label><input type="checkbox" name="days" value="0" /> Sun</label>
         </fieldset>
-        <button class="primary-button" type="submit">Start VO₂ Max Rebuild</button>
+        <button class="primary-button" type="submit">Start training with purpose</button>
       </form>
     </section>
 
     <header class="topbar">
-      <a class="brand" href="#today" aria-label="Mountain Beast home">
-        <span class="brand-mark">MB</span>
+      <a class="brand" href="#today" aria-label="TrainFor home">
+        <span class="brand-mark" aria-hidden="true"><span>TF</span></span>
         <span>
-          <strong>Mountain Beast</strong>
-          <small id="activeProgramLabel">Current Mission: 12-Week VO₂ Max Rebuild</small>
+          <strong>TrainFor</strong>
+          <small id="activeProgramLabel">Current Goal: 12-Week VO₂ Max Rebuild</small>
+          <small id="trainingForLabel">Training For: Health · Mountain · Forever</small>
           <small id="headerWeekLabel">Week 1 of 12</small>
-          <small id="headerTodayLabel">Today: loading mission…</small>
+          <small id="headerTodayLabel">Today: loading session…</small>
         </span>
       </a>
       <button class="icon-button" id="settingsButton" aria-label="Open settings">•••</button>
@@ -63,7 +64,7 @@
         <div class="hero">
           <div>
             <p class="eyebrow" id="dateLabel"></p>
-            <h1 id="todayHeadline">Build the engine.</h1>
+            <h1 id="todayHeadline">Train for what matters.</h1>
             <p class="hero-copy" id="phaseLabel"></p>
           </div>
           <div class="week-ring" id="weekRing"><span id="weekNumber">1</span><small>week</small></div>
@@ -80,6 +81,14 @@
             <button data-readiness="red" aria-pressed="false"><strong>Red</strong><span>Chest tightness, sharp pain, sick</span></button>
           </div>
           <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
+        </article>
+
+        <article class="next-move-card" id="nextBestMoveCard">
+          <div>
+            <p class="eyebrow">Next Best Move</p>
+            <strong id="nextBestMoveText">Check readiness, then follow the written plan.</strong>
+          </div>
+          <details><summary>Why?</summary><p id="nextBestMoveWhy"></p></details>
         </article>
 
         <article class="card workout-card" id="todayWorkoutCard">
@@ -122,7 +131,7 @@
 
         <article class="card completion-recap" id="completionRecap" aria-live="polite" hidden>
           <div class="card-heading">
-            <div><p class="eyebrow">Mountain Beast progress saved</p><h2>Session Complete</h2></div>
+            <div><p class="eyebrow">TrainFor progress saved</p><h2>Session Complete</h2></div>
             <span class="status-pill done">Complete ✓</span>
           </div>
           <div class="recap-grid" id="completionRecapContent"></div>
@@ -130,7 +139,7 @@
 
         <article class="readiness-card">
           <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
-          <div><p class="eyebrow">Mountain Readiness</p><h2 id="beastTitle">Base Camp Builder</h2><p id="readinessMessage"></p></div>
+          <div><p class="eyebrow">Training Readiness</p><h2 id="beastTitle">Foundation Builder</h2><p id="readinessMessage"></p></div>
         </article>
 
         <div class="metric-grid">
@@ -204,12 +213,17 @@
           <button class="primary-button" type="submit">Save weekly check-in</button>
         </form>
 
-        <article class="card" id="weeklySummaryCard">
+        <article class="card weekly-review-card" id="weeklySummaryCard">
           <div class="card-heading">
-            <div><p class="eyebrow">Current week</p><h2>Weekly summary</h2></div>
-            <span class="status-pill" id="weeklyBadge">Badge locked</span>
+            <div class="heading-with-icon"><span id="weeklyReviewIcon" class="heading-icon" aria-hidden="true"></span><div><p class="eyebrow" id="weeklyReviewEyebrow">Current week</p><h2>Weekly Review</h2></div></div>
+            <span class="status-pill" id="weeklyReviewStatus">Building review</span>
           </div>
-          <div class="summary-grid" id="weeklySummary"></div>
+          <div class="review-lines" id="weeklySummary"></div>
+          <div class="review-actions" id="weeklyReviewActions" hidden>
+            <button class="primary-button" id="applyWeeklySuggestion">Apply suggestion</button>
+            <button class="secondary-button" id="keepWeeklyPlan">Keep plan as written</button>
+          </div>
+          <details class="review-details"><summary>How calculated?</summary><p id="weeklyReviewDetails"></p></details>
         </article>
 
         <article class="card system-rings-card">
@@ -263,7 +277,7 @@
       <div class="backup-reminder" id="backupReminder"></div>
       <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
       <button class="secondary-button" id="editProfile">Edit profile & start date</button>
-      <div class="app-version"><strong id="appVersion">Mountain Beast</strong><span id="appUpdated"></span></div>
+      <div class="app-version"><strong id="appVersion">TrainFor</strong><span id="appUpdated"></span></div>
       <button class="danger-button" id="resetData">Reset local data</button>
     </dialog>
 
@@ -291,6 +305,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.6.2"></script>
+    <script src="./app.js?v=0.8.0"></script>
   </body>
 </html>

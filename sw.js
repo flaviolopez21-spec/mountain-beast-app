@@ -1,10 +1,10 @@
-const CACHE = "mountain-beast-v11";
+const CACHE = "trainfor-v13";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=0.6.2",
-  "./app.js?v=0.6.2",
-  "./manifest.webmanifest?v=0.6.2",
+  "./styles.css?v=0.8.0",
+  "./app.js?v=0.8.0",
+  "./manifest.webmanifest?v=0.8.0",
   "./sw.js"
 ];
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
@@ -29,7 +29,7 @@ self.addEventListener("activate", event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key.startsWith("mountain-beast-") && key !== CACHE)
+          .filter(key => (key.startsWith("mountain-beast-") || key.startsWith("trainfor-")) && key !== CACHE)
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())

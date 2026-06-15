@@ -1,7 +1,7 @@
 const VO2_BADGES = [
   "Started the Engine", "Showed Up Again", "First Build Week", "Smart Deload",
   "Engine Builder", "Hill Strong", "Longer Intervals Unlocked", "Absorbed the Work",
-  "4-Minute Beast", "Full VO₂ Session", "Peak Week", "Mountain Engine Rebuilt"
+  "4-Minute Engine", "Full VO₂ Session", "Peak Week", "Purpose Engine Rebuilt"
 ];
 const S = (type, title, minutes, effort, warmup = [], main = [], cooldown = [], victory = "") => ({
   type, title, minutes, effort, warmup, main, cooldown, victory
@@ -133,17 +133,79 @@ const PROGRAMS = {
     badges: VO2_BADGES
   }
 };
-const FUTURE_PROGRAMS = ["Strength Base", "Rainier Hiking Prep", "Ruck Builder", "Fat Loss Conditioning", "Maintenance Mode"];
+const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "Ruck Builder", "Health + Longevity", "Conditioning", "Maintenance Mode"];
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.6.2";
+const APP_VERSION = "0.8.0";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
   "Long Walk/Hike/Ruck", "Strength A", "Strength B", "Recovery Walk",
   "Mobility", "Benchmark", "Rest"
 ];
+
+function sessionIcon(type, className = "") {
+  const kind = type === "Zone 2 Walk" ? "walk"
+    : type === "VO₂ Intervals" ? "interval"
+      : ["Tempo/Incline", "Hill Repeats"].includes(type) ? "incline"
+        : ["Strength A", "Strength B"].includes(type) ? "strength"
+          : type === "Long Walk/Hike/Ruck" ? "hike"
+            : ["Recovery Walk", "Mobility", "Rest"].includes(type) ? "recovery"
+              : "benchmark";
+  const paths = {
+    walk: '<path d="M7 34c7 0 10-4 13-12l4-10 5 10c2 5 7 8 16 10l-2 8H17c-6 0-9-2-10-6Z"/><path d="M17 32h27M24 14l-7-4"/>',
+    interval: '<circle cx="26" cy="27" r="17"/><path d="M26 27V16M20 5h12M26 5v5M40 13l4-4M12 42l-5 5M40 42l5 5"/>',
+    incline: '<path d="M5 41 22 20l8 9 8-16 11 28Z"/><path d="m17 29 5-9 6 7M9 41h38"/>',
+    strength: '<path d="M14 20v16M8 23v10M38 20v16M44 23v10M14 28h24"/><path d="M5 26v4M47 26v4"/>',
+    hike: '<path d="m5 42 16-23 7 9 8-15 13 29Z"/><path d="M15 42c2-8 9-9 10-17"/><rect x="33" y="22" width="9" height="13" rx="2"/>',
+    recovery: '<path d="M42 9C22 10 10 21 10 38c12 3 25-1 32-12 4-6 4-12 0-17Z"/><path d="M11 39c9-9 18-15 29-22M28 27v10"/>',
+    benchmark: '<path d="M14 46V7M16 9h25l-6 8 6 8H16M7 46h20"/>'
+  };
+  return `<svg class="session-icon ${className}" viewBox="0 0 52 52" aria-hidden="true">${paths[kind]}</svg>`;
+}
+
+const EXERCISES = [
+  { name: "Goblet Squat", aliases: ["goblet squat"], icon: "squat", cue: "Hold the dumbbell close and sit between your hips.", setup: "Stand about shoulder-width with one dumbbell held vertically at your chest.", steps: ["Brace before you descend.", "Sit down between the hips while knees track over toes.", "Drive through the whole foot and stand tall."], mistakes: "Letting the heels lift, knees collapse inward, or the dumbbell drift away.", equipment: "Dumbbell or kettlebell", substitutions: "Leg press, bodyweight box squat" },
+  { name: "Leg Press", aliases: ["leg press"], icon: "squat", cue: "Use a controlled depth and keep the whole foot planted.", setup: "Set the seat so your low back stays supported at the bottom.", steps: ["Place feet about shoulder-width.", "Lower smoothly without the pelvis curling.", "Press through the mid-foot and stop short of locking hard."], mistakes: "Going deeper than your hip mobility allows or bouncing the sled.", equipment: "Leg press machine", substitutions: "Goblet squat, supported squat" },
+  { name: "Romanian Deadlift", aliases: ["romanian deadlift", "rdl"], icon: "hinge", cue: "Push the hips back and keep the weight close.", setup: "Stand tall with soft knees and dumbbells near the thighs.", steps: ["Brace and send the hips backward.", "Lower until the hamstrings feel loaded while the spine stays long.", "Drive the hips forward to stand."], mistakes: "Squatting the movement, rounding the back, or reaching the weights away.", equipment: "Dumbbells, barbell, or Smith machine", substitutions: "Hamstring curl, cable pull-through" },
+  { name: "Hamstring Curl", aliases: ["hamstring curl"], icon: "hinge", cue: "Curl smoothly without lifting the hips.", setup: "Align the machine pivot near the knee and secure the pad above the heel.", steps: ["Brace against the pad.", "Curl through a comfortable range.", "Lower for two controlled seconds."], mistakes: "Using momentum or arching the low back.", equipment: "Seated or lying leg-curl machine", substitutions: "Romanian deadlift, stability-ball curl" },
+  { name: "Step-up", aliases: ["step-up", "step up"], icon: "step", cue: "Let the working leg lift you onto the box.", setup: "Choose a box height that lets you keep the pelvis level.", steps: ["Plant the whole lead foot.", "Lean slightly forward and drive through that leg.", "Control the step down."], mistakes: "Pushing hard from the trailing foot or letting the knee cave inward.", equipment: "Stable box or bench", substitutions: "Leg press, supported split squat" },
+  { name: "Split Squat", aliases: ["split squat"], icon: "step", cue: "Drop straight down with both feet rooted.", setup: "Take a comfortable staggered stance and hold support if needed.", steps: ["Brace and lower the back knee toward the floor.", "Keep the front knee tracking over the foot.", "Push through the front foot to rise."], mistakes: "Using a stance that is too narrow or wobbling through painful depth.", equipment: "Bodyweight, dumbbells, optional support", substitutions: "Step-up, leg press" },
+  { name: "Push-up", aliases: ["push-up", "push up", "push-ups", "push ups"], icon: "push", cue: "Move as one line from shoulders through heels.", setup: "Hands just outside shoulder-width; use a bench for an easier angle.", steps: ["Brace glutes and ribs.", "Lower the chest between the hands.", "Press the floor away without shrugging."], mistakes: "Dropping the hips, flaring elbows, or shortening the range.", equipment: "Floor or elevated bench", substitutions: "Dumbbell bench press, chest-press machine" },
+  { name: "Dumbbell Bench Press", aliases: ["dumbbell bench press", "db bench press", "db bench"], icon: "push", cue: "Keep shoulder blades settled and press smoothly.", setup: "Lie on a bench with feet planted and dumbbells over the chest.", steps: ["Set the shoulders down and back.", "Lower elbows slightly below the torso.", "Press up while keeping wrists stacked."], mistakes: "Overarching, bouncing, or letting wrists fold backward.", equipment: "Bench and dumbbells", substitutions: "Push-up, machine chest press" },
+  { name: "Cable Row", aliases: ["cable row", "seated cable row"], icon: "pull", cue: "Pull elbows back without leaning away.", setup: "Sit tall with a neutral spine and shoulders relaxed.", steps: ["Reach without rounding.", "Drive elbows toward the back pockets.", "Pause, then return under control."], mistakes: "Turning it into a torso swing or shrugging toward the ears.", equipment: "Cable row station", substitutions: "Chest-supported dumbbell row, machine row" },
+  { name: "Lat Pulldown", aliases: ["lat pulldown"], icon: "pull", cue: "Pull elbows toward your ribs, not the bar behind your neck.", setup: "Secure the thigh pad and take a comfortable overhand or neutral grip.", steps: ["Sit tall with a slight lean.", "Pull to the upper chest.", "Control the reach overhead."], mistakes: "Swinging backward, pulling behind the neck, or using a grip that is too wide.", equipment: "Lat-pulldown machine", substitutions: "Assisted pull-up, cable row" },
+  { name: "Dumbbell Shoulder Press", aliases: ["dumbbell shoulder press", "db shoulder press"], icon: "push", cue: "Keep ribs stacked while pressing overhead.", setup: "Sit or stand tall with dumbbells near shoulder height.", steps: ["Brace the trunk.", "Press overhead without leaning back.", "Lower until elbows are just below shoulder height."], mistakes: "Flaring the ribs or forcing a painful overhead range.", equipment: "Dumbbells and optional bench", substitutions: "Landmine press, machine shoulder press" },
+  { name: "Plank", aliases: ["plank"], icon: "core", cue: "Make a straight, braced line and breathe behind the brace.", setup: "Place elbows under shoulders and extend the legs.", steps: ["Tuck the pelvis slightly.", "Brace the abs and glutes.", "Hold while taking controlled breaths."], mistakes: "Sagging the hips, holding the breath, or shrugging.", equipment: "Floor mat", substitutions: "Elevated plank, dead bug" },
+  { name: "Dead Bug", aliases: ["dead bug"], icon: "core", cue: "Keep the low back quiet while opposite limbs move.", setup: "Lie on your back with hips and knees at 90 degrees and arms up.", steps: ["Exhale and brace gently.", "Lower one arm and the opposite leg.", "Return without the low back lifting."], mistakes: "Moving too far, rushing, or losing rib position.", equipment: "Floor mat", substitutions: "Heel taps, elevated plank" }
+];
+
+function exerciseIllustration(kind, large = false) {
+  const drawings = {
+    squat: '<circle cx="26" cy="9" r="4"/><path d="M25 14l-4 13 9 8M21 27l-9 7M30 35l9 10M12 34l-4 11M18 18h18"/>',
+    hinge: '<circle cx="17" cy="9" r="4"/><path d="M18 14l11 10 10 2M29 24l-5 13M24 37l-6 9M24 37l10 9M38 22v10"/>',
+    step: '<circle cx="18" cy="9" r="4"/><path d="M19 14l5 14 10 3M24 28l-8 8M34 31l5 13M16 36l-5 9M30 34h17v11"/>',
+    push: '<circle cx="13" cy="21" r="4"/><path d="M17 22l15 5 12 1M29 27l-6 10M38 28l6 9M8 38h39"/>',
+    pull: '<circle cx="26" cy="13" r="4"/><path d="M26 18v16M26 23l-12-8M26 23l12-8M26 34l-8 12M26 34l8 12M10 10h32"/>',
+    core: '<circle cx="10" cy="28" r="4"/><path d="M14 28h18M22 28l8-12M22 28l8 13M32 28l11-7M32 28l11 8"/>'
+  };
+  return `<svg class="exercise-visual${large ? " large" : ""}" viewBox="0 0 52 52" aria-hidden="true">${drawings[kind] || drawings.core}</svg>`;
+}
+function exerciseMatches(text) {
+  const normalized = text.toLowerCase();
+  return EXERCISES.filter(exercise => exercise.aliases.some(alias => normalized.includes(alias)));
+}
+function exerciseHelperMarkup(exercise, compact = false) {
+  return `<details class="exercise-helper${compact ? " compact" : ""}">
+    <summary>${exerciseIllustration(exercise.icon)}<span><strong>${exercise.name}</strong><small>${exercise.cue}</small></span><i>How to</i></summary>
+    <div class="exercise-guide">
+      <div class="exercise-guide-visual">${exerciseIllustration(exercise.icon, true)}<span>${exercise.equipment}</span></div>
+      <div><h4>Setup</h4><p>${exercise.setup}</p><h4>How to do it</h4><ol>${exercise.steps.map(step => `<li>${step}</li>`).join("")}</ol></div>
+      <div><h4>Key cue</h4><p>${exercise.cue}</p><h4>Common mistakes</h4><p>${exercise.mistakes}</p><h4>Alternatives</h4><p>${exercise.substitutions}</p></div>
+    </div>
+  </details>`;
+}
 
 const BADGE_META = [
   ["spark", "The first session is logged. The engine has turned over."],
@@ -157,7 +219,7 @@ const BADGE_META = [
   ["four", "Four-minute efforts unlocked with discipline."],
   ["lungs", "A complete VO₂ session, controlled from start to finish."],
   ["peak", "The strongest week of the block is within reach."],
-  ["flag", "Twelve weeks of deliberate work rebuilt the mountain engine."]
+  ["flag", "Twelve weeks of deliberate work rebuilt your training engine."]
 ];
 
 const DEFAULT_PROFILE = {
@@ -180,6 +242,7 @@ function initialState() {
     exerciseHistory: {},
     rucks: [],
     habits: {},
+    adaptive: { adjustments: {}, decisions: {} },
     healthImport: null,
     meta: {
       lastSavedAt: null, lastBackupAt: null, lastTab: "today", lastOpenedDate: null, todayNotes: {},
@@ -192,6 +255,7 @@ function migrate(raw) {
   const base = initialState();
   const next = raw && typeof raw === "object" ? raw : base;
   next.setup ??= null;
+  if (next.setup?.hikingGoal === "General beast mode") next.setup.hikingGoal = "Health + Mountain";
   next.selectedProgram ??= "vo2-rebuild";
   next.programStarts ??= { "vo2-rebuild": next.setup?.startDate || DEFAULT_START };
   next.sessions ??= [];
@@ -202,6 +266,9 @@ function migrate(raw) {
   next.exerciseHistory ??= {};
   next.rucks ??= [];
   next.habits ??= {};
+  next.adaptive ??= {};
+  next.adaptive.adjustments ??= {};
+  next.adaptive.decisions ??= {};
   next.healthImport ??= null;
   next.meta ??= {};
   next.meta.lastSavedAt ??= null;
@@ -233,6 +300,15 @@ function formatSavedTime(value) {
 }
 function profile() { return { ...DEFAULT_PROFILE, ...(state.setup || {}) }; }
 function activeProgram() { return PROGRAMS[state.selectedProgram] || PROGRAMS["vo2-rebuild"]; }
+function trainingForText() {
+  const goal = profile().hikingGoal || "Health + Mountain";
+  if (/rainier|backpack|snow|mountain/i.test(goal)) return "Mountain · Health · Forever";
+  if (/5k/i.test(goal)) return "5K · Health · Forever";
+  if (/strength/i.test(goal)) return "Strength · Health · Life";
+  if (/condition/i.test(goal)) return "Conditioning · Health · Life";
+  if (/longevity/i.test(goal)) return "Health · Longevity · Forever";
+  return "Health · Mountain · Forever";
+}
 function dateKey(date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
@@ -253,9 +329,36 @@ function activeDate() {
 function dayIndex(date = activeDate()) { return Math.max(0, Math.min(83, Math.floor((date - startDate()) / 86400000))); }
 function currentWeek(date = activeDate()) { return Math.floor(dayIndex(date) / 7) + 1; }
 function currentDay(date = activeDate()) { return dayIndex(date) % 7; }
+function adaptiveProgramBucket(key) {
+  state.adaptive[key][state.selectedProgram] ??= {};
+  return state.adaptive[key][state.selectedProgram];
+}
+function adjustmentForWeek(week) {
+  return adaptiveProgramBucket("adjustments")[week] || null;
+}
+function applyPlanAdjustment(plan, week, day) {
+  const adjustment = adjustmentForWeek(week);
+  if (!adjustment || adjustment.day !== day || adjustment.type !== plan.type) return plan;
+  const next = { ...plan, adaptiveNote: adjustment.label, baselineMinutes: plan.minutes };
+  if (adjustment.variable === "duration") next.minutes = Math.max(10, plan.minutes + adjustment.amount);
+  if (adjustment.variable === "rounds") {
+    next.main = plan.main.map(item =>
+      item.replace(/(\d+) rounds/i, (_, rounds) => `${Math.max(2, Number(rounds) + adjustment.amount)} rounds`)
+    );
+  }
+  if (adjustment.variable === "weight") {
+    next.main = [...plan.main, `Progression note: ${adjustment.amount < 0 ? "reduce working weight about 10%" : `add up to ${adjustment.amount} lb to one clean movement only`}`];
+  }
+  return next;
+}
 function planFor(date = activeDate()) {
   const week = currentWeek(date);
-  return { ...activeProgram().weeks[week - 1].days[currentDay(date)], week, day: currentDay(date) + 1, weekData: activeProgram().weeks[week - 1] };
+  const dayIndexInWeek = currentDay(date);
+  const baseline = activeProgram().weeks[week - 1].days[dayIndexInWeek];
+  return {
+    ...applyPlanAdjustment(baseline, week, dayIndexInWeek),
+    week, day: dayIndexInWeek + 1, weekData: activeProgram().weeks[week - 1]
+  };
 }
 function latest(list) { return [...list].sort((a, b) => String(a.date).localeCompare(String(b.date))).at(-1); }
 
@@ -288,7 +391,12 @@ function currentReadiness() { return state.readiness[dateKey(activeDate())] || {
 
 function list(items) {
   if (!items?.length) return "";
-  return `<ul class="exercise-list">${items.map(item => `<li><strong>${item}</strong></li>`).join("")}</ul>`;
+  return `<div class="exercise-list">${items.map(item => {
+    const helpers = exerciseMatches(item);
+    return `<div class="prescription-item"><strong>${item}</strong>${helpers.length
+      ? `<div class="inline-exercise-helpers">${helpers.map(exercise => exerciseHelperMarkup(exercise, true)).join("")}</div>`
+      : ""}</div>`;
+  }).join("")}</div>`;
 }
 function workoutDetails(plan) {
   return [
@@ -311,6 +419,7 @@ function sessionsForWeek(week) {
 }
 function plannedCardioMinutes(week) {
   return activeProgram().weeks[week - 1].days
+    .map((day, index) => applyPlanAdjustment(day, week, index))
     .filter(day => !["Strength A", "Strength B", "Mobility", "Rest"].includes(day.type))
     .reduce((sum, day) => sum + day.minutes, 0);
 }
@@ -324,6 +433,194 @@ function weeklyStats(week = currentWeek()) {
   const chassis = logs.filter(log => chassisTypes.includes(log.type)).length;
   const plannedChassis = activeProgram().weeks[week - 1].days.filter(day => chassisTypes.includes(day.type)).length;
   return { logs, cardio, uniqueDates, plannedSessions, chassis, plannedChassis, completion: Math.min(100, Math.round(uniqueDates / plannedSessions * 100)) };
+}
+function completedSessions(logs) {
+  return logs.filter(log => log.status !== "skipped" && log.type !== "Rest");
+}
+function sessionsBetween(from, to) {
+  return state.sessions.filter(session => {
+    if (session.programId !== state.selectedProgram) return false;
+    const date = atNoon(session.date);
+    return date >= from && date <= to;
+  });
+}
+function recentSessions(days, end = activeDate()) {
+  const from = new Date(end);
+  from.setDate(from.getDate() - days + 1);
+  return sessionsBetween(from, end);
+}
+function textHasSafetyFlag(log) {
+  const text = `${log.notes || ""} ${log.painNotes || ""} ${log.recoveryNotes || ""}`.toLowerCase();
+  return /(knee|shin|ankle|back pain|sharp pain|wheez|asthma|chest tight|breath)/.test(text);
+}
+function hasBreathingFlag(log) {
+  return (log.breathing && log.breathing !== "Normal") || textHasSafetyFlag(log);
+}
+function trainingLoad(logs) {
+  return completedSessions(logs).reduce((total, log) => {
+    const minutes = Number(log.minutes || 0);
+    const hardBonus = ["VO₂ Intervals", "Tempo/Incline", "Hill Repeats", "Benchmark"].includes(log.type) ? 20 : 0;
+    const strengthBonus = ["Strength A", "Strength B"].includes(log.type) ? 15 : 0;
+    return total + minutes + hardBonus + strengthBonus;
+  }, 0);
+}
+function strengthSignal(logs) {
+  const strength = completedSessions(logs).filter(log => ["Strength A", "Strength B"].includes(log.type));
+  if (!strength.length) return "none";
+  const failed = strength.filter(log => /missed reps|failed|could not finish/i.test(log.notes || ""));
+  if (failed.length >= 2) return "deload";
+  const latestStrength = strength.at(-1);
+  const rpes = Object.entries(latestStrength)
+    .filter(([key, value]) => /^rpe\d+$/.test(key) && Number(value))
+    .map(([, value]) => Number(value));
+  const maxRpe = rpes.length ? Math.max(...rpes) : Number(latestStrength.effort || 0);
+  const readiness = state.readiness[latestStrength.date]?.color;
+  if (maxRpe && maxRpe <= 7 && Number(latestStrength.pain || 0) <= 2 && readiness === "green") return "increase";
+  if (maxRpe >= 8 || failed.length) return "hold";
+  return "none";
+}
+function weightTrend() {
+  const cutoff = new Date(activeDate());
+  cutoff.setDate(cutoff.getDate() - 13);
+  const entries = state.checkins
+    .filter(item => Number(item.weight) && atNoon(item.date) >= cutoff)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (entries.length < 3) return "Not enough weight data yet.";
+  const midpoint = new Date(activeDate());
+  midpoint.setDate(midpoint.getDate() - 6);
+  const older = entries.filter(item => atNoon(item.date) < midpoint);
+  const newer = entries.filter(item => atNoon(item.date) >= midpoint);
+  if (!older.length || !newer.length) return "Not enough weight data yet.";
+  const average = list => list.reduce((sum, item) => sum + Number(item.weight), 0) / list.length;
+  const change = average(newer) - average(older);
+  if (change <= -.4) return "Trend weight is moving down slowly.";
+  if (Math.abs(change) < 1) return "Trend weight is stable.";
+  return "Trend weight moved up slightly; keep watching the weekly average.";
+}
+function targetDayForType(week, type) {
+  const days = activeProgram().weeks[week - 1]?.days || [];
+  const exact = days.findIndex(day => day.type === type);
+  if (exact >= 0) return exact;
+  return days.findIndex(day => type.startsWith("Strength") && day.type.startsWith("Strength"));
+}
+function buildWeeklyReview(sourceWeek = currentWeek()) {
+  const stats = weeklyStats(sourceWeek);
+  const completed = completedSessions(stats.logs);
+  const last14 = completedSessions(recentSessions(14));
+  const recent7 = completedSessions(recentSessions(7));
+  const priorEnd = new Date(activeDate()); priorEnd.setDate(priorEnd.getDate() - 7);
+  const prior7 = completedSessions(recentSessions(7, priorEnd));
+  const loadRising = trainingLoad(prior7) > 0 && trainingLoad(recent7) > trainingLoad(prior7) * 1.25;
+  const skipped = stats.logs.filter(log => log.status === "skipped").length;
+  const enough = stats.logs.length >= 3 || sourceWeek < currentWeek();
+  const painFlags = last14.filter(log => Number(log.pain || 0) >= 3 || textHasSafetyFlag(log));
+  const breathingFlags = last14.filter(hasBreathingFlag);
+  const vo2Struggles = completed.filter(log =>
+    log.type === "VO₂ Intervals" &&
+    (Number(log.effort || 0) >= 9 || /No|Stopped/i.test(log.controlledFinish || ""))
+  );
+  const cleanZone2 = completed.filter(log =>
+    log.type === "Zone 2 Walk" && Number(log.pain || 0) <= 2 &&
+    Number(log.effort || 0) <= 5 && !hasBreathingFlag(log)
+  );
+  const cleanLong = last14.filter(log =>
+    log.type === "Long Walk/Hike/Ruck" && Number(log.pain || 0) <= 2 && !hasBreathingFlag(log)
+  );
+  const strength = strengthSignal(last14);
+  const targetWeek = sourceWeek + 1;
+  const phaseReview = sourceWeek % 4 === 0;
+  const bodyTrend = weightTrend();
+  let meaning = stats.completion >= 80 ? "Consistency is building without needing a dramatic jump."
+    : stats.completion >= 50 ? "The week is moving forward. Repeating quality work matters more than forcing progression."
+      : "The best progression right now is making the next week easier to complete.";
+  if (painFlags.length || breathingFlags.length) meaning = "Recovery signals outrank progression. Holding steady protects the block.";
+  if (phaseReview) meaning += " This is a four-week phase review, so the longer trend matters more than one session.";
+
+  let suggestion = null;
+  let suggestionText = "Keep the next week exactly as written.";
+  if (!enough) {
+    suggestionText = "Keep logging. A suggestion appears after at least three entries for the week.";
+  } else if (targetWeek > 12) {
+    suggestionText = "Finish the block as written and use the final benchmark before choosing the next mission.";
+  } else if (painFlags.length || breathingFlags.length) {
+    suggestionText = "Hold progression next week. Keep the baseline plan and use Yellow or Red when symptoms call for it.";
+  } else if (strength === "deload") {
+    const type = activeProgram().weeks[targetWeek - 1].days.find(day => day.type.startsWith("Strength"))?.type;
+    const day = type ? targetDayForType(targetWeek, type) : -1;
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type, variable: "weight", amount: -10, label: "Strength: 10% working-weight deload", reason: "Two recent strength notes indicated failed work." };
+      suggestionText = "Deload working weight about 10% for the next strength session. Keep the planned sets and reps.";
+    }
+  } else if (vo2Struggles.length) {
+    const day = targetDayForType(targetWeek, "VO₂ Intervals");
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type: "VO₂ Intervals", variable: "rounds", amount: -1, label: "VO₂ intervals: one fewer round", reason: "Recent intervals finished at the limit." };
+      suggestionText = "Reduce the next VO₂ session by one round, then rebuild from a controlled finish.";
+    }
+  } else if (strength === "hold") {
+    suggestionText = "Repeat the same strength weight next time. Keep the rest of the baseline week as written.";
+  } else if (loadRising) {
+    suggestionText = "Hold the baseline plan next week. Recent training load rose enough that absorbing the work is the progression.";
+  } else if (stats.completion < 50 || skipped >= 2) {
+    const day = targetDayForType(targetWeek, "Zone 2 Walk");
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type: "Zone 2 Walk", variable: "duration", amount: -5, label: "Monday Zone 2 -5 min", reason: "A smaller first step should make the week easier to complete." };
+      suggestionText = "Trim five minutes from Monday Zone 2 and keep every other session unchanged.";
+    }
+  } else if (strength === "increase") {
+    const type = activeProgram().weeks[targetWeek - 1].days.find(day => day.type.startsWith("Strength"))?.type;
+    const day = type ? targetDayForType(targetWeek, type) : -1;
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type, variable: "weight", amount: 5, label: "Strength: one movement +5 lb", reason: "The last Green strength session was clean at RPE 7 or lower." };
+      suggestionText = "Add up to five pounds to one clean strength movement only. Keep everything else unchanged.";
+    }
+  } else if (cleanZone2.length) {
+    const day = targetDayForType(targetWeek, "Zone 2 Walk");
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type: "Zone 2 Walk", variable: "duration", amount: 5, label: "Monday Zone 2 +5 min", reason: "Recent Zone 2 work was completed cleanly with low pain." };
+      suggestionText = "Add five minutes to Monday Zone 2 and keep intervals unchanged.";
+    }
+  } else if (sourceWeek % 2 === 0 && cleanLong.length) {
+    const day = targetDayForType(targetWeek, "Long Walk/Hike/Ruck");
+    if (day >= 0) {
+      suggestion = { targetWeek, day, type: "Long Walk/Hike/Ruck", variable: "duration", amount: 5, label: "Long walk/hike +5 min", reason: "The 14-day long-session trend is clean." };
+      suggestionText = "Add five minutes to the long session. Keep pack weight, incline, and pace unchanged.";
+    }
+  }
+
+  const reviewId = `${state.selectedProgram}-week-${sourceWeek}`;
+  return {
+    id: reviewId,
+    sourceWeek,
+    targetWeek,
+    enough,
+    phaseReview,
+    what: `${completed.length} of ${stats.plannedSessions} sessions completed${skipped ? `, ${skipped} protected/skipped` : ""}. ${bodyTrend}`,
+    meaning,
+    suggestion,
+    suggestionText,
+    details: `Reviewed completion, the last 7–14 days of training load, readiness, pain, breathing notes, controlled finishes, and trend weight. Only one variable can change at a time.`
+  };
+}
+function nextBestMove() {
+  const readiness = currentReadiness();
+  const recent = recentSessions(7);
+  const previousEnd = new Date(activeDate()); previousEnd.setDate(previousEnd.getDate() - 7);
+  const previous = recentSessions(7, previousEnd);
+  const safety = completedSessions(recent).some(log => Number(log.pain || 0) >= 3 || hasBreathingFlag(log));
+  const skipped = recent.filter(log => log.status === "skipped").length;
+  const loadRising = trainingLoad(previous) > 0 && trainingLoad(recent) > trainingLoad(previous) * 1.25;
+  const raw = planFor();
+  if (readiness.color === "red") return { tone: "red", message: "Recover today. Rest or take the easy recovery option.", why: "Red readiness removes progression and hard work." };
+  if (readiness.color === "yellow") return { tone: "yellow", message: "Use the Yellow version. Keep the same easy effort and do less.", why: "Today’s readiness check is the only daily adjustment." };
+  if (safety) return { tone: "yellow", message: "Hold progression. Pain or breathing notes appeared recently.", why: "The written workout stays intact; use Yellow or Red if those signals are present today." };
+  if (skipped >= 2) return { tone: "neutral", message: "Protect the streak: aim for the 20-minute minimum version.", why: "Recent missed sessions suggest that a smaller win may be more useful than extra load." };
+  if (loadRising) return { tone: "neutral", message: "Do the plan today, but add nothing extra.", why: "Your recent training load rose more than usual, so the engine needs time to absorb it." };
+  if (raw.type.startsWith("Strength") && strengthSignal(recent) === "increase") {
+    return { tone: "green", message: "Strength is ready for one small increase, not a full-session jump.", why: "The last Green strength session was clean, low-pain, and RPE 7 or lower." };
+  }
+  if (!readiness.color) return { tone: "neutral", message: "Check readiness, then follow the written plan.", why: "Daily changes only come from Green, Yellow, or Red readiness." };
+  return { tone: "green", message: "Do the plan today. Green day, normal load.", why: "Recent logs do not show a reason to reduce or progress today." };
 }
 function badgeEarned(week) {
   const stats = weeklyStats(week);
@@ -418,7 +715,7 @@ function readinessScore() {
     safety: { label: "Pain management", max: 5, points: avgPain == null ? 0 : Math.max(0, Math.round(5 - avgPain * .7)) }
   };
   const total = Object.values(components).reduce((sum, item) => sum + item.points, 0);
-  const title = total >= 90 ? "Rainier Ready" : total >= 75 ? "Summit Weapon" : total >= 60 ? "Alpine Engine" : total >= 45 ? "Pack Mule" : total >= 25 ? "Trail Dog" : "Base Camp Builder";
+  const title = total >= 90 ? "Goal Ready" : total >= 75 ? "Performance Ready" : total >= 60 ? "Engine Building" : total >= 45 ? "Capacity Growing" : total >= 25 ? "Consistency Building" : "Foundation Builder";
   const programLogs = state.sessions.filter(session => session.programId === state.selectedProgram);
   return { total, title, components, stats, hasBaseline: programLogs.length >= 3 };
 }
@@ -437,13 +734,14 @@ function renderToday() {
   document.querySelector("#dateLabel").textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   document.querySelector("#phaseLabel").textContent = `Week ${raw.week}, Day ${raw.day} · ${phaseName(raw.weekData.phase)} · ${raw.weekData.theme}`;
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
-  document.querySelector("#activeProgramLabel").textContent = `Current Mission: ${activeProgram().name}`;
+  document.querySelector("#activeProgramLabel").textContent = `Current Goal: ${activeProgram().name}`;
+  document.querySelector("#trainingForLabel").textContent = `Training For: ${trainingForText()}`;
   const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
   const headerToday = document.querySelector("#headerTodayLabel");
   if (headerToday) headerToday.textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
   document.querySelector("#weekNumber").textContent = raw.week;
   setRingProgress("#weekRing", raw.week / 12 * 360);
-  document.querySelector("#todayPurpose").textContent = `Week ${raw.week}, Day ${raw.day} · ${raw.type}`;
+  document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${raw.week}, Day ${raw.day} · ${raw.type}</span>`;
   document.querySelector("#todayWorkout").textContent = plan.title;
   document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : completed ? "Completed today" : raw.title;
   document.querySelector("#todayStatus").classList.toggle("done", !!matching);
@@ -453,7 +751,9 @@ function renderToday() {
       ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>Rest / ${plan.minutes} min easy</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message">${plan.adaptation}</div>`
       : `<div class="adaptation-comparison"><div><span>Original</span><strong>${raw.minutes} min</strong></div><div><span>Today</span><strong>${raw.minutes} min</strong></div><div><span>Adjustment</span><strong>Full plan</strong></div></div><div class="adaptation-message">Green day: keep the effort controlled and complete the plan as written.</div>`;
   document.querySelector("#adaptationBanner").className = `adaptation-banner ${readiness.color || "neutral"}`;
-  document.querySelector("#workoutContent").innerHTML = workoutDetails(plan);
+  document.querySelector("#workoutContent").innerHTML =
+    (raw.adaptiveNote ? `<div class="plan-adjustment-note">Adjusted from weekly review: ${raw.adaptiveNote}.</div>` : "") +
+    workoutDetails(plan);
   document.querySelector("#workoutNotes").value = matching?.notes || state.meta.todayNotes[dateKey(date)] || "";
   document.querySelector("#readinessNote").value = readiness.note || "";
   document.querySelectorAll("[data-readiness]").forEach(button => {
@@ -464,6 +764,11 @@ function renderToday() {
   const status = document.querySelector("#readinessStatus");
   status.textContent = readiness.color ? `${readiness.color[0].toUpperCase()}${readiness.color.slice(1)} day` : "Not checked";
   status.className = `status-pill ${readiness.color || ""}`;
+  const nextMove = nextBestMove();
+  const nextMoveCard = document.querySelector("#nextBestMoveCard");
+  nextMoveCard.className = `next-move-card ${nextMove.tone}`;
+  document.querySelector("#nextBestMoveText").textContent = nextMove.message;
+  document.querySelector("#nextBestMoveWhy").textContent = nextMove.why;
   const score = readinessScore();
   document.querySelector("#readinessScore").textContent = score.hasBaseline ? score.total : "…";
   document.querySelector("#readinessScale").style.display = score.hasBaseline ? "" : "none";
@@ -504,7 +809,7 @@ function renderCompletionRecap(session, raw, plan, readiness) {
   const content = document.querySelector("#completionRecapContent");
   if (!content) return;
   content.innerHTML = [
-    ["Session", session.plannedType || session.type],
+    ["Session", `<span class="recap-session">${sessionIcon(session.plannedType || session.type)}${session.plannedType || session.type}</span>`],
     ["Training time", `${session.minutes || 0} min`],
     ["Adjustment", adjustment],
     ["Readiness", readinessName],
@@ -522,20 +827,23 @@ function renderPlan(phase = 1) {
     .filter(item => item.week.phase === phase)
     .map(({ week, number }) => {
       const start = new Date(startDate()); start.setDate(start.getDate() + (number - 1) * 7);
-      const days = week.days.map((day, i) => {
+      const adjustment = adjustmentForWeek(number);
+      const days = week.days.map((baselineDay, i) => {
+        const day = applyPlanAdjustment(baselineDay, number, i);
         const date = new Date(start); date.setDate(date.getDate() + i);
-        return `<details class="plan-day"><summary><time>${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</time><strong>${day.title}</strong><span>›</span></summary>
-          <div class="day-workout">${workoutDetails({ ...day, weekData: week })}</div></details>`;
+        return `<details class="plan-day"><summary><time>${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</time><span class="plan-session">${sessionIcon(day.type)}<strong>${day.title}</strong></span><span>›</span></summary>
+          <div class="day-workout">${day.adaptiveNote ? `<div class="plan-adjustment-note">Adjusted from weekly review: ${day.adaptiveNote}.</div>` : ""}${workoutDetails({ ...day, weekData: week })}</div></details>`;
       }).join("");
       return `<details class="plan-week ${number === currentWeek() ? "current" : ""}" ${number === currentWeek() ? "open" : ""}>
         <summary><div><strong>Week ${number}: ${week.theme}</strong><span>${week.target} · ${activeProgram().badges[number - 1]}</span></div></summary>
-        <div class="week-overview"><div class="victory"><span>Weekly victory</span><strong>${week.victory}</strong></div></div>
+        <div class="week-overview">${adjustment ? `<div class="plan-adjustment-note">Adjusted from weekly review: ${adjustment.label}.</div>` : ""}<div class="victory"><span>Weekly victory</span><strong>${week.victory}</strong></div></div>
         <div class="week-days">${days}</div></details>`;
     }).join("");
 }
 
 function dynamicFields(type) {
   if (type === "Zone 2 Walk") return `
+    ${sessionLogHeader(type)}
     <div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="600" required /></label>
     <label class="field"><span>Distance (miles)</span><input type="number" name="distance" min="0" step="0.01" /></label>
     <label class="field"><span>Average HR</span><input type="number" name="avgHr" min="40" max="220" /></label>
@@ -543,6 +851,7 @@ function dynamicFields(type) {
     <label class="field"><span>Route / incline</span><input name="route" placeholder="Outdoor loop, 5% treadmill..." /></label>
     <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label></div>`;
   if (type === "VO₂ Intervals") return `
+    ${sessionLogHeader(type)}
     <div class="form-grid"><label class="field"><span>Total duration (minutes)</span><input type="number" name="minutes" min="1" max="300" required /></label>
     <label class="field"><span>Rounds completed</span><input type="number" name="rounds" min="0" max="20" /></label>
     <label class="field"><span>Hard interval length (sec)</span><input type="number" name="hardSeconds" min="0" /></label>
@@ -552,6 +861,7 @@ function dynamicFields(type) {
     <label class="field"><span>Controlled finish?</span><select name="controlledFinish"><option>Yes — could repeat one</option><option>Yes — correctly spent</option><option>No — went too hard</option><option>Stopped early</option></select></label>
     <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label></div>`;
   if (type === "Long Walk/Hike/Ruck") return `
+    ${sessionLogHeader(type)}
     <div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="1440" required /></label>
     <label class="field"><span>Miles</span><input type="number" name="distance" min="0" step="0.1" /></label>
     <label class="field"><span>Pack weight (lb)</span><input type="number" name="packWeight" min="0" step="0.5" /></label>
@@ -562,20 +872,23 @@ function dynamicFields(type) {
     <label class="field"><span>Pain notes</span><input name="painNotes" placeholder="Feet, knee, back, hot spots..." /></label></div>`;
   if (["Strength A", "Strength B"].includes(type)) {
     const movements = type === "Strength A" ? STRENGTH_A : STRENGTH_B;
-    return `<div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="300" required /></label>
+    return `${sessionLogHeader(type)}<div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="300" required /></label>
       <label class="field"><span>Session effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label></div>
-      <div class="strength-log">${movements.map((movement, index) => `<div class="strength-line"><strong>${movement.split("—")[0].trim()}</strong>
+      <div class="strength-log">${movements.map((movement, index) => `<div class="strength-block"><div class="strength-line"><strong>${movement.split("—")[0].trim()}</strong>
         <label class="field"><span>Sets</span><input type="number" name="sets${index}" min="0" /></label>
         <label class="field"><span>Reps</span><input type="number" name="reps${index}" min="0" /></label>
         <label class="field"><span>Weight</span><input type="number" name="weight${index}" min="0" step="0.5" /></label>
-        <label class="field"><span>RPE</span><input type="number" name="rpe${index}" min="1" max="10" /></label></div>`).join("")}</div>`;
+        <label class="field"><span>RPE</span><input type="number" name="rpe${index}" min="1" max="10" /></label></div>
+        <div class="strength-helper-slot">${exerciseMatches(movement).map(exercise => exerciseHelperMarkup(exercise, true)).join("")}</div></div>`).join("")}</div>`;
   }
   if (["Recovery Walk", "Mobility"].includes(type)) return `
+    ${sessionLogHeader(type)}
     <div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="300" required /></label>
     <label class="field"><span>Body area</span><input name="bodyArea" placeholder="Hips, calves, full body..." /></label>
     <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label>
     <label class="field"><span>Recovery notes</span><input name="recoveryNotes" placeholder="What felt better or tight?" /></label></div>`;
   if (["Tempo/Incline", "Hill Repeats", "Benchmark"].includes(type)) return `
+    ${sessionLogHeader(type)}
     <div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="1" max="600" required /></label>
     <label class="field"><span>Distance (miles)</span><input type="number" name="distance" min="0" step="0.01" /></label>
     <label class="field"><span>Elevation gain (ft)</span><input type="number" name="elevation" min="0" step="10" /></label>
@@ -583,8 +896,11 @@ function dynamicFields(type) {
     <label class="field"><span>Max HR</span><input type="number" name="maxHr" min="40" max="230" /></label>
     <label class="field"><span>Route / incline</span><input name="route" /></label>
     <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" required /></label></div>`;
-  return `<div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="0" max="1440" value="0" required /></label>
+  return `${sessionLogHeader(type)}<div class="form-grid"><label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="0" max="1440" value="0" required /></label>
     <label class="field"><span>Effort (1–10)</span><input type="number" name="effort" min="1" max="10" value="1" required /></label></div>`;
+}
+function sessionLogHeader(type) {
+  return `<div class="session-log-header">${sessionIcon(type)}<div><span>Logging</span><strong>${type}</strong></div></div>`;
 }
 function renderLog() {
   const form = document.querySelector("#sessionForm");
@@ -592,7 +908,7 @@ function renderLog() {
   document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(form.elements.type.value);
   const logs = [...state.sessions].filter(session => session.programId === state.selectedProgram).sort((a, b) => b.date.localeCompare(a.date));
   document.querySelector("#sessionHistory").innerHTML = `<article class="card"><p class="eyebrow">Session history</p><h2>${logs.length} logged session${logs.length === 1 ? "" : "s"}</h2>${logs.slice(0, 20).map(log => `
-    <div class="history-card"><time>${atNoon(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
+    <div class="history-card"><span class="history-icon">${sessionIcon(log.type)}</span><time>${atNoon(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
     <div><strong>${log.type}</strong><span>${log.minutes} min · effort ${log.effort}/10${log.avgHr ? ` · ${log.avgHr} bpm` : ""}</span></div><strong>${log.pain || 0}/10</strong></div>`).join("")}</article>`;
 }
 
@@ -617,7 +933,7 @@ function renderProgress() {
   document.querySelector("#progressTitle").textContent = score.hasBaseline ? score.title : `${state.sessions.filter(session => session.programId === state.selectedProgram).length}/3 sessions logged`;
   document.querySelector("#scoreBreakdown").innerHTML = score.hasBaseline
     ? Object.values(score.components).map(item => `<div class="score-component"><span>${item.label}</span><strong>${item.points}/${item.max}</strong></div>`).join("")
-    : `<div class="pace-note">Mountain Readiness appears after three sessions so an empty week never looks like a failing score.</div>`;
+    : `<div class="pace-note">Training Readiness appears after three sessions so an empty week never looks like a failing score.</div>`;
   document.querySelector("#latestMetrics").innerHTML = [
     ["VO₂ max estimate", latestVo2().toFixed(1)],
     ["Resting HR", latestRestingHr() ? `${latestRestingHr()} bpm` : "—"],
@@ -661,34 +977,24 @@ function renderSystemRings() {
 }
 
 function renderWeeklySummary() {
-  const week = currentWeek();
-  const stats = weeklyStats(week);
-  const planned = plannedCardioMinutes(week);
-  const workouts = new Set(stats.logs.filter(log => log.type !== "Rest").map(log => log.date)).size;
-  const vo2Count = stats.logs.filter(log => log.type === "VO₂ Intervals").length;
-  const longDone = stats.logs.some(log => log.type === "Long Walk/Hike/Ruck");
-  const pains = stats.logs.map(log => Number(log.pain || 0));
-  const averagePain = pains.length ? (pains.reduce((sum, value) => sum + value, 0) / pains.length).toFixed(1) : "—";
-  const currentCheckin = [...state.weeklyCheckins]
-    .filter(item => item.programId === state.selectedProgram && currentWeek(atNoon(item.date)) === week)
-    .sort((a, b) => a.date.localeCompare(b.date)).at(-1);
-  const sessionConfidence = stats.logs.map(log => Number(log.confidence || 0)).filter(Boolean);
-  const confidence = currentCheckin?.confidence || (sessionConfidence.length
-    ? (sessionConfidence.reduce((sum, value) => sum + value, 0) / sessionConfidence.length).toFixed(1) : "—");
-  const badgeUnlocked = badgeEarned(week);
-  const badge = activeProgram().badges[week - 1];
-  document.querySelector("#weeklyBadge").textContent = badgeUnlocked ? badge : "Badge locked";
-  document.querySelector("#weeklyBadge").classList.toggle("done", badgeUnlocked);
+  const review = buildWeeklyReview();
+  const decision = adaptiveProgramBucket("decisions")[review.id];
+  const applied = review.suggestion && adjustmentForWeek(review.targetWeek)?.sourceReview === review.id;
+  const status = document.querySelector("#weeklyReviewStatus");
+  document.querySelector("#weeklyReviewIcon").innerHTML = sessionIcon(planFor().type);
+  document.querySelector("#weeklyReviewEyebrow").textContent = review.phaseReview ? "Four-week phase review" : `Week ${review.sourceWeek}`;
+  status.textContent = applied ? "Applied" : decision === "kept" ? "Plan kept" : review.enough ? "Ready" : "Building review";
+  status.classList.toggle("done", !!applied);
   document.querySelector("#weeklySummary").innerHTML = [
-    ["Cardio", `${stats.cardio} / ${planned} min`],
-    ["Workouts", `${workouts} / 6`],
-    ["VO₂ sessions", vo2Count],
-    ["Long walk / hike", longDone ? "Completed" : "Not yet"],
-    ["Average pain", averagePain === "—" ? "—" : `${averagePain}/10`],
-    ["Confidence", confidence === "—" ? "—" : `${confidence}/10`],
-    ["Completion", `${stats.completion}%`],
-    ["Unlocked badge", badgeUnlocked ? badge : "Keep building"]
-  ].map(([label, value]) => `<div class="summary-item"><span>${label}</span><strong>${value}</strong></div>`).join("");
+    ["What happened", review.what],
+    ["What it means", review.meaning],
+    ["Suggested adjustment", applied ? `${review.suggestionText} Applied to Week ${review.targetWeek}.` : review.suggestionText]
+  ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  document.querySelector("#weeklyReviewDetails").textContent = review.details;
+  const actions = document.querySelector("#weeklyReviewActions");
+  actions.hidden = !review.suggestion || !!applied;
+  document.querySelector("#applyWeeklySuggestion").disabled = !review.suggestion || !!applied;
+  document.querySelector("#keepWeeklyPlan").classList.toggle("selected", decision === "kept");
 }
 function longestDistance() {
   const max = Math.max(0, ...state.sessions.map(item => Number(item.distance || 0)), ...state.rucks.map(item => Number(item.miles || 0)));
@@ -696,7 +1002,7 @@ function longestDistance() {
 }
 
 const COACH_SECTIONS = [
-  ["Mission", "Raise VO₂ max by building a stronger aerobic engine for health, confidence, hiking, and longevity. Build the engine. Protect the body. Show up for 12 weeks."],
+  ["Purpose", "Train for something that matters: the mountain, a 5K, better health, greater longevity, or everyday life. The current goal is a 12-week VO₂ Max Rebuild for a stronger aerobic engine."],
   ["Training Zones", "<strong>Zone 1:</strong> 2–3/10, very easy. <strong>Zone 2:</strong> 4–5/10, full sentences. <strong>Tempo:</strong> 6–7/10, short phrases. <strong>VO₂:</strong> 8–9/10, hard but controlled."],
   ["Heart Rate Guide", "Estimated max: 189 bpm. Recovery: 95–115. Zone 2: 115–140. Tempo: 140–160. VO₂ intervals: 160–180. These are estimates; effort and symptoms win."],
   ["Safety Rules", "Stop or back off for chest pain, dizziness, faintness, unusual shortness of breath, persistent wheezing, sharp pain, or a feeling that something is wrong. Warm up at least 10 minutes before hard intervals."],
@@ -704,7 +1010,9 @@ const COACH_SECTIONS = [
   ["Green / Yellow / Red", "<strong>Green:</strong> do the plan. <strong>Yellow:</strong> reduce volume 25–40%. <strong>Red:</strong> skip hard work; rest or take an easy recovery walk."],
   ["Minimum Viable Week", "One Zone 2 walk, one VO₂ session, one long walk, and one strength session. An ugly week does not end the block."],
   ["Strength Plan", `<strong>Strength A</strong><br>${STRENGTH_A.join("<br>")}<br><br><strong>Strength B</strong><br>${STRENGTH_B.join("<br>")}<br><br>Leave 2–3 reps in reserve. No grinding or maxing.`],
+  ["Exercise Form Guide", `<div class="exercise-library">${EXERCISES.map(exercise => exerciseHelperMarkup(exercise)).join("")}</div>`],
   ["Tracking", "Weekly: VO₂ max, resting HR, body weight, longest walk/hike, same-route average HR, energy, sleep, breathing notes, and confidence. Judge trends every 2–4 weeks."],
+  ["How adjustments work", "<strong>Daily:</strong> only Green, Yellow, or Red readiness changes today’s workout. <strong>Weekly:</strong> after enough logs, the app may suggest one small change for next week. <strong>Every two weeks:</strong> it can consider longer cardio, hike, and strength trends. <strong>Every four weeks:</strong> it reviews the phase instead of reacting to one day.<br><br><strong>Small progression</strong> means changing duration, rounds, weight, incline, or pack weight one at a time. <strong>Holding steady</strong> means the baseline plan remains correct. <strong>Deloading</strong> means temporarily reducing work when repeated struggle, pain, or breathing flags appear. <strong>Training load</strong> is a plain comparison of recent time plus hard or strength work. <strong>Trend weight</strong> uses weekly averages, never one daily weigh-in. Red readiness never triggers progression."],
   ["Mindset", "The number is feedback, not identity. Every walk is a vote for your future self. You are training because you are responsible for your body now."]
 ];
 function renderCoach() {
@@ -722,7 +1030,8 @@ function renderProgramSelectors() {
     select.innerHTML = options;
     select.value = state.selectedProgram;
   });
-  document.querySelector("#activeProgramLabel").textContent = activeProgram().shortName;
+  document.querySelector("#activeProgramLabel").textContent = `Current Goal: ${activeProgram().name}`;
+  document.querySelector("#trainingForLabel").textContent = `Training For: ${trainingForText()}`;
 }
 
 function showOnboarding() {
@@ -829,7 +1138,7 @@ function closeBadgeDetails() {
 function renderSavedState() {
   const saved = document.querySelector("#lastSavedToday");
   if (saved) saved.textContent = formatSavedTime(state.meta.lastSavedAt);
-  document.querySelector("#appVersion").textContent = `Mountain Beast v${APP_VERSION}`;
+  document.querySelector("#appVersion").textContent = `TrainFor v${APP_VERSION}`;
   document.querySelector("#appUpdated").textContent = `Last app update: ${APP_UPDATED}`;
 
   const reminder = document.querySelector("#backupReminder");
@@ -1025,7 +1334,7 @@ function restoreTimer() {
 function bootstrapApp() {
 const bottomNav = document.querySelector("#bottomNav");
 if (!bottomNav) {
-  console.error("Mountain Beast could not start: bottom navigation is missing.");
+  console.error("TrainFor could not start: bottom navigation is missing.");
   return;
 }
 document.querySelectorAll(".reward-overlay").forEach(overlay => {
@@ -1240,6 +1549,26 @@ document.querySelector("#weeklyCheckinForm")?.addEventListener("submit", event =
   savedLocally("Weekly check-in saved ✓");
   renderProgress(); renderToday();
 });
+document.querySelector("#applyWeeklySuggestion")?.addEventListener("click", () => {
+  const review = buildWeeklyReview();
+  if (!review.suggestion) return;
+  adaptiveProgramBucket("adjustments")[review.targetWeek] = {
+    ...review.suggestion,
+    sourceReview: review.id,
+    appliedAt: new Date().toISOString()
+  };
+  adaptiveProgramBucket("decisions")[review.id] = "applied";
+  savedLocally("Weekly adjustment applied ✓");
+  renderProgress();
+  renderPlan(Number(document.querySelector("#phaseTabs .active")?.dataset.phase || 1));
+  renderToday();
+});
+document.querySelector("#keepWeeklyPlan")?.addEventListener("click", () => {
+  const review = buildWeeklyReview();
+  adaptiveProgramBucket("decisions")[review.id] = "kept";
+  savedLocally("Baseline plan kept ✓");
+  renderWeeklySummary();
+});
 bottomNav.addEventListener("click", event => {
   const link = event.target.closest("a[data-target]");
   if (!link || !bottomNav.contains(link)) return;
@@ -1249,7 +1578,7 @@ bottomNav.addEventListener("click", event => {
   try {
     navigate(link.dataset.target);
   } catch (error) {
-    console.error("Mountain Beast tab render failed; using basic navigation.", error);
+    console.error("TrainFor tab render failed; using basic navigation.", error);
     fallbackNavigate(link.dataset.target);
   }
 });
@@ -1275,7 +1604,7 @@ document.querySelector("#exportData")?.addEventListener("click", () => {
   renderSavedState();
   const blob = new Blob([JSON.stringify({ version: 5, exportedAt: state.meta.lastBackupAt, state }, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob); const link = document.createElement("a");
-  link.href = url; link.download = `mountain-beast-backup-${dateKey(today())}.json`; link.click(); URL.revokeObjectURL(url);
+  link.href = url; link.download = `trainfor-backup-${dateKey(today())}.json`; link.click(); URL.revokeObjectURL(url);
   toast("Private backup exported ✓");
 });
 document.querySelector("#importData")?.addEventListener("change", async event => {
@@ -1305,7 +1634,7 @@ document.querySelector("#healthImport")?.addEventListener("change", async event 
   event.target.value = "";
 });
 document.querySelector("#resetData")?.addEventListener("click", () => {
-  if (!confirm("Reset all local Mountain Beast data on this device?")) return;
+  if (!confirm("Reset all local TrainFor data on this device?")) return;
   state = initialState(); saveState(); dialog.close(); renderAll(); showOnboarding();
 });
 
@@ -1384,7 +1713,7 @@ document.querySelector("#updateNow")?.addEventListener("click", async event => {
       return;
     }
   } catch (error) {
-    console.warn("Mountain Beast update check failed; reloading directly.", error);
+    console.warn("TrainFor update check failed; reloading directly.", error);
   }
 
   const freshUrl = new URL(location.href);
@@ -1395,7 +1724,7 @@ registerServiceWorker().catch(error => console.warn("Service worker registration
 try {
   renderAll();
 } catch (error) {
-  console.error("Mountain Beast startup render failed; enabling basic tab navigation.", error);
+  console.error("TrainFor startup render failed; enabling basic tab navigation.", error);
   fallbackNavigate(["today","plan","log","progress","coach"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "today");
 }
 }

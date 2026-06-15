@@ -1,10 +1,10 @@
 {
-  "name": "Mountain Beast Foundation",
-  "short_name": "Mountain Beast",
-  "description": "Private, local-first Mountain Beast training programs.",
+  "name": "TrainFor",
+  "short_name": "TrainFor",
+  "description": "Purpose-driven training for health, performance, mountains, and life.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#fbfaf6",
-  "theme_color": "#102a25",
+  "background_color": "#faf9f5",
+  "theme_color": "#183c35",
   "icons": []
 }
