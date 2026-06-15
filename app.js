@@ -1,6 +1,6 @@
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.6.0";
+const APP_VERSION = "0.6.1";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -302,7 +302,8 @@ function renderToday() {
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
   document.querySelector("#activeProgramLabel").textContent = `Current Mission: ${activeProgram().name}`;
   const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
-  document.querySelector("#headerTodayLabel").textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
+  const headerToday = document.querySelector("#headerTodayLabel");
+  if (headerToday) headerToday.textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
   document.querySelector("#weekNumber").textContent = raw.week;
   setRingProgress("#weekRing", raw.week / 12 * 360);
   document.querySelector("#todayPurpose").textContent = `Week ${raw.week}, Day ${raw.day} · ${raw.type}`;
@@ -352,6 +353,7 @@ function renderToday() {
 
 function renderCompletionRecap(session, raw, plan, readiness) {
   const recap = document.querySelector("#completionRecap");
+  if (!recap) return;
   if (!session || session.status !== "completed") {
     recap.hidden = true;
     return;
@@ -362,7 +364,9 @@ function renderCompletionRecap(session, raw, plan, readiness) {
     ? `${readinessName} day: ${plan.minutes} from ${plan.originalMinutes} min`
     : `${readinessName} day: full plan`;
   const progress = badgeProgress(raw.week);
-  document.querySelector("#completionRecapContent").innerHTML = [
+  const content = document.querySelector("#completionRecapContent");
+  if (!content) return;
+  content.innerHTML = [
     ["Session", session.plannedType || session.type],
     ["Training time", `${session.minutes || 0} min`],
     ["Adjustment", adjustment],
@@ -501,6 +505,7 @@ function renderProgress() {
 }
 
 function renderSystemRings() {
+  if (!document.querySelector("#engineRing")) return;
   const week = currentWeek();
   const stats = weeklyStats(week);
   const cardioTarget = plannedCardioMinutes(week);
@@ -592,6 +597,7 @@ function showOnboarding() {
   form.querySelectorAll('input[name="days"]').forEach(input => input.checked = p.days.includes(Number(input.value)));
   document.querySelector("#onboarding").hidden = false;
 }
+let updateMiniWorkout = () => {};
 function navigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
   document.querySelectorAll(".bottom-nav a").forEach(link => {
@@ -656,6 +662,8 @@ function showNewBadge(before) {
 }
 
 function showBadgeDetails(week) {
+  const overlay = document.querySelector("#badgeDetailOverlay");
+  if (!overlay) return;
   const earned = badgeEarned(week);
   const current = week === currentWeek() && !earned;
   const [kind, description] = BADGE_META[week - 1];
@@ -670,13 +678,13 @@ function showBadgeDetails(week) {
     ["Progress", `${progress.completed} / ${progress.required} sessions (${progress.percent}%)`],
     ["Unlock date", unlockDate ? atNoon(unlockDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "Not unlocked yet"]
   ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
-  const overlay = document.querySelector("#badgeDetailOverlay");
   overlay.hidden = false;
   requestAnimationFrame(() => overlay.classList.add("visible"));
   document.querySelector("#badgeDetailDone").focus();
 }
 function closeBadgeDetails() {
   const overlay = document.querySelector("#badgeDetailOverlay");
+  if (!overlay) return;
   overlay.classList.remove("visible");
   setTimeout(() => { overlay.hidden = true; }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180);
 }
@@ -765,14 +773,17 @@ function renderTimer() {
   document.querySelector("#timerDisplay").textContent = timerText(timerState.remaining);
   document.querySelector("#timerRound").textContent = timerState.totalRounds > 1
     ? `Round ${phase?.round || 1} of ${timerState.totalRounds}` : "";
-  document.querySelector("#timerNext").textContent = next ? `Next: ${timerText(next.seconds)} ${next.label.toLowerCase()}` : phase ? "Final phase" : "Ready to log";
-  document.querySelector("#timerProgress").style.width = `${percent}%`;
+  const nextLabel = document.querySelector("#timerNext");
+  if (nextLabel) nextLabel.textContent = next ? `Next: ${timerText(next.seconds)} ${next.label.toLowerCase()}` : phase ? "Final phase" : "Ready to log";
+  const progress = document.querySelector("#timerProgress");
+  if (progress) progress.style.width = `${percent}%`;
   document.querySelector("#timerPause").textContent = timerState.running ? "Pause" : "Resume";
   document.querySelector("#timerPause").disabled = !phase;
   const panel = document.querySelector("#timerPanel");
   panel.classList.toggle("hard-phase", timerState.running && phase?.label === "Hard interval");
   panel.classList.toggle("easy-phase", timerState.running && phase?.label === "Easy recovery");
-  document.querySelector("#timerFinish").hidden = !!phase;
+  const finish = document.querySelector("#timerFinish");
+  if (finish) finish.hidden = !!phase;
 }
 function persistTimer() {
   state.meta.timer = timerState.phases.length ? {
@@ -792,7 +803,8 @@ function stopTimer(hide = true, clear = false) {
     Object.assign(timerState, { remaining: 0, phases: [], phaseIndex: 0, totalRounds: 1, kind: null, totalSeconds: 0 });
     state.meta.timer = null;
     saveState();
-    document.querySelector("#timerFinish").hidden = true;
+    const finish = document.querySelector("#timerFinish");
+    if (finish) finish.hidden = true;
   } else {
     persistTimer();
   }
@@ -851,7 +863,8 @@ function startTimer(kind) {
     deadline: Date.now() + phases[0].seconds * 1000, totalSeconds
   });
   document.querySelector("#timerPanel").hidden = false;
-  document.querySelector("#timerFinish").hidden = true;
+  const finish = document.querySelector("#timerFinish");
+  if (finish) finish.hidden = true;
   persistTimer();
   renderTimer();
   timerState.intervalId = setInterval(tickTimer, 1000);
@@ -872,7 +885,24 @@ function restoreTimer() {
   renderTimer();
 }
 
+function bootstrapApp() {
 const bottomNav = document.querySelector("#bottomNav");
+if (!bottomNav) {
+  console.error("Mountain Beast could not start: bottom navigation is missing.");
+  return;
+}
+document.querySelectorAll(".reward-overlay").forEach(overlay => {
+  overlay.hidden = true;
+  overlay.classList.remove("visible");
+});
+const settingsDialog = document.querySelector("#settingsDialog");
+if (settingsDialog?.open) settingsDialog.close();
+function fallbackNavigate(target) {
+  document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
+  document.querySelectorAll(".bottom-nav a").forEach(link => link.classList.toggle("active", link.dataset.target === target));
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 let lastScrollY = window.scrollY;
 let scrollFrame = null;
 let navExpandLockUntil = 0;
@@ -901,13 +931,14 @@ function updateNavForScroll() {
   updateMiniWorkout();
 }
 
-function updateMiniWorkout() {
+updateMiniWorkout = function updateMiniWorkoutView() {
   const mini = document.querySelector("#miniWorkout");
   const card = document.querySelector("#todayWorkoutCard");
+  if (!mini || !card) return;
   const todayView = document.querySelector('[data-view="today"]').classList.contains("active");
   const workoutPassed = card.getBoundingClientRect().bottom < 120;
   mini.classList.toggle("visible", todayView && workoutPassed && window.scrollY > 100);
-}
+};
 
 window.addEventListener("scroll", () => {
   if (scrollFrame == null) scrollFrame = requestAnimationFrame(updateNavForScroll);
@@ -916,7 +947,7 @@ bottomNav.addEventListener("pointerdown", expandNavForInteraction);
 bottomNav.addEventListener("focusin", expandNavForInteraction);
 bottomNav.addEventListener("keydown", expandNavForInteraction);
 
-document.querySelector("#onboardingForm").addEventListener("submit", event => {
+document.querySelector("#onboardingForm")?.addEventListener("submit", event => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
   const days = [...event.currentTarget.querySelectorAll('input[name="days"]:checked')].map(input => Number(input.value));
@@ -939,24 +970,24 @@ document.querySelectorAll("[data-readiness]").forEach(button => button.addEventL
   savedLocally();
   renderToday();
 }));
-document.querySelector("#readinessNote").addEventListener("change", event => {
+document.querySelector("#readinessNote")?.addEventListener("change", event => {
   const current = currentReadiness();
   state.readiness[dateKey(activeDate())] = { color: current.color, note: event.target.value.trim() };
   savedLocally();
 });
 let noteSaveTimer = null;
-document.querySelector("#workoutNotes").addEventListener("input", event => {
+document.querySelector("#workoutNotes")?.addEventListener("input", event => {
   state.meta.todayNotes[dateKey(activeDate())] = event.target.value;
   saveState();
   clearTimeout(noteSaveTimer);
   noteSaveTimer = setTimeout(() => savedLocally(), 700);
 });
-document.querySelector("#workoutNotes").addEventListener("change", event => {
+document.querySelector("#workoutNotes")?.addEventListener("change", event => {
   clearTimeout(noteSaveTimer);
   state.meta.todayNotes[dateKey(activeDate())] = event.target.value.trim();
   savedLocally();
 });
-document.querySelector("#completeTodayButton").addEventListener("click", () => {
+document.querySelector("#completeTodayButton")?.addEventListener("click", () => {
   const earnedBefore = earnedBadgeWeeks();
   upsertTodaySession("completed");
   savedLocally("Session complete ✓");
@@ -966,19 +997,19 @@ document.querySelector("#completeTodayButton").addEventListener("click", () => {
   pulseRing("#readinessRing");
   if (!showNewBadge(earnedBefore)) showReward();
 });
-document.querySelector("#reduceTodayButton").addEventListener("click", () => {
+document.querySelector("#reduceTodayButton")?.addEventListener("click", () => {
   state.readiness[dateKey(activeDate())] = { color: "yellow", note: document.querySelector("#readinessNote").value.trim() };
   savedLocally("Yellow version ready ✓");
   renderToday();
 });
-document.querySelector("#skipTodayButton").addEventListener("click", () => {
+document.querySelector("#skipTodayButton")?.addEventListener("click", () => {
   upsertTodaySession("skipped");
   savedLocally("Protected the streak ✓");
   renderToday();
   renderProgress();
 });
 document.querySelectorAll("[data-timer-kind]").forEach(button => button.addEventListener("click", () => startTimer(button.dataset.timerKind)));
-document.querySelector("#timerPause").addEventListener("click", () => {
+document.querySelector("#timerPause")?.addEventListener("click", () => {
   if (timerState.running) {
     reconcileTimer();
     clearInterval(timerState.intervalId);
@@ -993,9 +1024,9 @@ document.querySelector("#timerPause").addEventListener("click", () => {
   persistTimer();
   renderTimer();
 });
-document.querySelector("#timerReset").addEventListener("click", resetTimer);
-document.querySelector("#timerStop").addEventListener("click", () => stopTimer(true, true));
-document.querySelector("#timerFinish").addEventListener("click", () => {
+document.querySelector("#timerReset")?.addEventListener("click", resetTimer);
+document.querySelector("#timerStop")?.addEventListener("click", () => stopTimer(true, true));
+document.querySelector("#timerFinish")?.addEventListener("click", () => {
   stopTimer(true, true);
   document.querySelector("#logTodayButton").click();
 });
@@ -1005,32 +1036,32 @@ document.addEventListener("visibilitychange", () => {
     renderTimer();
   }
 });
-document.querySelector("#miniWorkout").addEventListener("click", () => {
+document.querySelector("#miniWorkout")?.addEventListener("click", () => {
   expandNavForInteraction();
   document.querySelector("#todayWorkoutCard").scrollIntoView({
     behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     block: "start"
   });
 });
-document.querySelector("#rewardClose").addEventListener("click", closeReward);
-document.querySelector("#rewardDone").addEventListener("click", closeReward);
-document.querySelector("#rewardOverlay").addEventListener("click", event => {
+document.querySelector("#rewardClose")?.addEventListener("click", closeReward);
+document.querySelector("#rewardDone")?.addEventListener("click", closeReward);
+document.querySelector("#rewardOverlay")?.addEventListener("click", event => {
   if (event.target === event.currentTarget) closeReward();
 });
-document.querySelector("#badgeGrid").addEventListener("click", event => {
+document.querySelector("#badgeGrid")?.addEventListener("click", event => {
   const badge = event.target.closest("[data-badge-week]");
   if (badge) showBadgeDetails(Number(badge.dataset.badgeWeek));
 });
-document.querySelector("#badgeDetailClose").addEventListener("click", closeBadgeDetails);
-document.querySelector("#badgeDetailDone").addEventListener("click", closeBadgeDetails);
-document.querySelector("#badgeDetailOverlay").addEventListener("click", event => {
+document.querySelector("#badgeDetailClose")?.addEventListener("click", closeBadgeDetails);
+document.querySelector("#badgeDetailDone")?.addEventListener("click", closeBadgeDetails);
+document.querySelector("#badgeDetailOverlay")?.addEventListener("click", event => {
   if (event.target === event.currentTarget) closeBadgeDetails();
 });
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !document.querySelector("#rewardOverlay").hidden) closeReward();
   if (event.key === "Escape" && !document.querySelector("#badgeDetailOverlay").hidden) closeBadgeDetails();
 });
-document.querySelector("#logTodayButton").addEventListener("click", () => {
+document.querySelector("#logTodayButton")?.addEventListener("click", () => {
   navigate("log"); history.replaceState(null, "", "#log");
   const plan = adjustedPlan(planFor(), currentReadiness().color);
   const form = document.querySelector("#sessionForm");
@@ -1041,8 +1072,8 @@ document.querySelector("#logTodayButton").addEventListener("click", () => {
   form.elements.effort.value = Number(String(plan.effort).match(/\d+/)?.[0] || 5);
   form.elements.notes.value = document.querySelector("#workoutNotes").value;
 });
-document.querySelector("#sessionType").addEventListener("change", event => document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(event.target.value));
-document.querySelector("#sessionForm").addEventListener("submit", event => {
+document.querySelector("#sessionType")?.addEventListener("change", event => document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(event.target.value));
+document.querySelector("#sessionForm")?.addEventListener("submit", event => {
   event.preventDefault();
   const earnedBefore = earnedBadgeWeeks();
   const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -1061,7 +1092,7 @@ document.querySelector("#sessionForm").addEventListener("submit", event => {
   renderLog(); renderProgress(); renderToday();
   showNewBadge(earnedBefore);
 });
-document.querySelector("#weeklyCheckinForm").addEventListener("submit", event => {
+document.querySelector("#weeklyCheckinForm")?.addEventListener("submit", event => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
   ["vo2","restingHr","weight","longestDistance","routeAvgHr","energy","sleep","confidence"].forEach(key => data[key] = Number(data[key]) || 0);
@@ -1072,9 +1103,19 @@ document.querySelector("#weeklyCheckinForm").addEventListener("submit", event =>
   savedLocally("Weekly check-in saved ✓");
   renderProgress(); renderToday();
 });
-document.querySelectorAll(".bottom-nav a").forEach(link => link.addEventListener("click", event => {
-  event.preventDefault(); expandNavForInteraction(); history.replaceState(null, "", link.hash); navigate(link.dataset.target);
-}));
+bottomNav.addEventListener("click", event => {
+  const link = event.target.closest("a[data-target]");
+  if (!link || !bottomNav.contains(link)) return;
+  event.preventDefault();
+  expandNavForInteraction();
+  history.replaceState(null, "", link.hash);
+  try {
+    navigate(link.dataset.target);
+  } catch (error) {
+    console.error("Mountain Beast tab render failed; using basic navigation.", error);
+    fallbackNavigate(link.dataset.target);
+  }
+});
 document.querySelectorAll("#phaseTabs button").forEach(button => button.addEventListener("click", () => {
   document.querySelectorAll("#phaseTabs button").forEach(item => item.classList.toggle("active", item === button));
   renderPlan(Number(button.dataset.phase));
@@ -1083,14 +1124,14 @@ function changeProgram(value) {
   if (!PROGRAMS[value]) return;
   state.selectedProgram = value; savedLocally(); renderAll();
 }
-document.querySelector("#programSelector").addEventListener("change", event => changeProgram(event.target.value));
-document.querySelector("#settingsProgramSelector").addEventListener("change", event => changeProgram(event.target.value));
+document.querySelector("#programSelector")?.addEventListener("change", event => changeProgram(event.target.value));
+document.querySelector("#settingsProgramSelector")?.addEventListener("change", event => changeProgram(event.target.value));
 
 const dialog = document.querySelector("#settingsDialog");
-document.querySelector("#settingsButton").addEventListener("click", () => dialog.showModal());
-document.querySelector("#closeSettings").addEventListener("click", () => dialog.close());
-document.querySelector("#editProfile").addEventListener("click", () => { dialog.close(); showOnboarding(); });
-document.querySelector("#exportData").addEventListener("click", () => {
+document.querySelector("#settingsButton")?.addEventListener("click", () => dialog?.showModal());
+document.querySelector("#closeSettings")?.addEventListener("click", () => dialog?.close());
+document.querySelector("#editProfile")?.addEventListener("click", () => { dialog?.close(); showOnboarding(); });
+document.querySelector("#exportData")?.addEventListener("click", () => {
   state.meta.lastBackupAt = new Date().toISOString();
   state.meta.lastSavedAt = state.meta.lastBackupAt;
   saveState();
@@ -1100,7 +1141,7 @@ document.querySelector("#exportData").addEventListener("click", () => {
   link.href = url; link.download = `mountain-beast-backup-${dateKey(today())}.json`; link.click(); URL.revokeObjectURL(url);
   toast("Private backup exported ✓");
 });
-document.querySelector("#importData").addEventListener("change", async event => {
+document.querySelector("#importData")?.addEventListener("change", async event => {
   try {
     const parsed = JSON.parse(await event.target.files[0].text());
     if (!parsed.state) throw new Error();
@@ -1108,7 +1149,7 @@ document.querySelector("#importData").addEventListener("change", async event => 
   } catch { toast("Backup file is not valid"); }
   event.target.value = "";
 });
-document.querySelector("#healthImport").addEventListener("change", async event => {
+document.querySelector("#healthImport")?.addEventListener("change", async event => {
   const file = event.target.files[0]; if (!file) return;
   try {
     const xml = new DOMParser().parseFromString(await file.text(), "application/xml");
@@ -1126,7 +1167,7 @@ document.querySelector("#healthImport").addEventListener("change", async event =
   } catch { toast("Choose the extracted Apple Health export.xml file"); }
   event.target.value = "";
 });
-document.querySelector("#resetData").addEventListener("click", () => {
+document.querySelector("#resetData")?.addEventListener("click", () => {
   if (!confirm("Reset all local Mountain Beast data on this device?")) return;
   state = initialState(); saveState(); dialog.close(); renderAll(); showOnboarding();
 });
@@ -1159,22 +1200,71 @@ function renderAll() {
 }
 
 let waitingWorker = null;
+let serviceWorkerRegistration = null;
 function showUpdateBanner(worker) {
   waitingWorker = worker;
-  document.querySelector("#updateBanner").hidden = false;
+  const banner = document.querySelector("#updateBanner");
+  if (banner) banner.hidden = false;
 }
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-  const registration = await navigator.serviceWorker.register("./sw.js");
+  const registration = await navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" });
+  serviceWorkerRegistration = registration;
   if (registration.waiting && navigator.serviceWorker.controller) showUpdateBanner(registration.waiting);
   registration.addEventListener("updatefound", () => {
     const worker = registration.installing;
     worker?.addEventListener("statechange", () => {
-      if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner(worker);
+      if (worker.state === "installed" && navigator.serviceWorker.controller) {
+        showUpdateBanner(registration.waiting || worker);
+      }
     });
   });
-  navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once: true });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    document.querySelector("#updateBanner")?.setAttribute("hidden", "");
+    location.reload();
+  }, { once: true });
+  registration.update().catch(() => {});
 }
-document.querySelector("#updateNow").addEventListener("click", () => waitingWorker?.postMessage({ type: "SKIP_WAITING" }));
-registerServiceWorker().catch(() => {});
-renderAll();
+document.querySelector("#updateNow")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = "Updating…";
+  const banner = document.querySelector("#updateBanner");
+  if (banner) banner.style.pointerEvents = "none";
+
+  try {
+    const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration();
+    const worker = waitingWorker || registration?.waiting;
+    if (worker) {
+      worker.postMessage({ type: "SKIP_WAITING" });
+      setTimeout(() => location.reload(), 1800);
+      return;
+    }
+    await registration?.update();
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      setTimeout(() => location.reload(), 1800);
+      return;
+    }
+  } catch (error) {
+    console.warn("Mountain Beast update check failed; reloading directly.", error);
+  }
+
+  const freshUrl = new URL(location.href);
+  freshUrl.searchParams.set("mb-update", Date.now());
+  location.replace(freshUrl.href);
+});
+registerServiceWorker().catch(error => console.warn("Service worker registration failed.", error));
+try {
+  renderAll();
+} catch (error) {
+  console.error("Mountain Beast startup render failed; enabling basic tab navigation.", error);
+  fallbackNavigate(["today","plan","log","progress","coach"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "today");
+}
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrapApp, { once: true });
+} else {
+  bootstrapApp();
+}
