@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.2";
+const APP_VERSION = "0.9.4";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -1069,6 +1069,15 @@ function showOnboarding() {
   document.querySelector("#onboarding").hidden = false;
 }
 let updateMiniWorkout = () => {};
+function centerActiveNavItem(target) {
+  const selector = target ? `.bottom-nav a[data-target="${target}"]` : ".bottom-nav a.active";
+  const activeLink = document.querySelector(selector);
+  if (!activeLink) return;
+  const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  requestAnimationFrame(() => {
+    activeLink.scrollIntoView({ behavior, block: "nearest", inline: "center" });
+  });
+}
 function navigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
   document.querySelectorAll(".bottom-nav a").forEach(link => {
@@ -1086,6 +1095,7 @@ function navigate(target) {
   state.meta.lastOpenedDate = dateKey(today());
   saveState();
   updateMiniWorkout();
+  centerActiveNavItem(target);
   window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 function toast(message) {
@@ -1371,6 +1381,7 @@ if (settingsDialog?.open) settingsDialog.close();
 function fallbackNavigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
   document.querySelectorAll(".bottom-nav a").forEach(link => link.classList.toggle("active", link.dataset.target === target));
+  centerActiveNavItem(target);
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
