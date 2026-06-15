@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.1";
+const APP_VERSION = "0.9.2";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -326,6 +326,17 @@ function dateKey(date) {
   return local.toISOString().slice(0, 10);
 }
 function atNoon(value) { return new Date(`${value}T12:00:00`); }
+function syncDateControl(input) {
+  if (!input) return;
+  const display = input.closest(".date-control")?.querySelector(".date-display");
+  if (!display) return;
+  display.textContent = input.value
+    ? atNoon(input.value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "Choose date";
+}
+function syncDateControls(root = document) {
+  root.querySelectorAll(".date-control input[type='date']").forEach(syncDateControl);
+}
 function today() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
@@ -917,6 +928,7 @@ function sessionLogHeader(type) {
 function renderLog() {
   const form = document.querySelector("#sessionForm");
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
+  syncDateControl(form.elements.date);
   document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(form.elements.type.value);
   const logs = [...state.sessions].filter(session => session.programId === state.selectedProgram).sort((a, b) => b.date.localeCompare(a.date));
   document.querySelector("#sessionHistory").innerHTML = `<article class="card"><p class="eyebrow">Session history</p><h2>${logs.length} logged session${logs.length === 1 ? "" : "s"}</h2>${logs.slice(0, 20).map(log => `
@@ -967,6 +979,7 @@ function renderProgress() {
   renderWeeklySummary();
   const form = document.querySelector("#weeklyCheckinForm");
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
+  syncDateControl(form.elements.date);
 }
 
 function renderSystemRings() {
@@ -1422,6 +1435,11 @@ document.querySelector("#onboardingForm")?.addEventListener("submit", event => {
   savedLocally("Training block ready ✓");
   renderAll();
 });
+document.querySelectorAll(".date-control input[type='date']").forEach(input => {
+  input.addEventListener("change", () => syncDateControl(input));
+  input.addEventListener("input", () => syncDateControl(input));
+});
+syncDateControls();
 
 document.querySelectorAll("[data-readiness]").forEach(button => button.addEventListener("click", () => {
   state.readiness[dateKey(activeDate())] = { color: button.dataset.readiness, note: document.querySelector("#readinessNote").value.trim() };
@@ -1524,6 +1542,7 @@ document.querySelector("#logTodayButton")?.addEventListener("click", () => {
   const plan = adjustedPlan(planFor(), currentReadiness().color);
   const form = document.querySelector("#sessionForm");
   form.elements.date.value = dateKey(activeDate());
+  syncDateControl(form.elements.date);
   form.elements.type.value = plan.type;
   document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(plan.type);
   form.elements.minutes.value = plan.minutes;
@@ -1545,6 +1564,7 @@ document.querySelector("#sessionForm")?.addEventListener("submit", event => {
   if (data.type === "Long Walk/Hike/Ruck") state.rucks.push({ date: data.date, miles: data.distance, packWeight: data.packWeight, elevation: data.elevation, minutes: data.minutes, terrain: data.terrain, pain: data.pain, notes: data.painNotes || data.notes });
   event.currentTarget.reset();
   event.currentTarget.elements.date.value = dateKey(activeDate());
+  syncDateControl(event.currentTarget.elements.date);
   populateSessionTypes();
   savedLocally("Session saved locally ✓");
   renderLog(); renderProgress(); renderToday();

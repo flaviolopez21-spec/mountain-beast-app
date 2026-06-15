@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.9.0" />
-    <link rel="stylesheet" href="./styles.css?v=0.9.0" />
+    <link rel="manifest" href="./manifest.webmanifest?v=0.9.2" />
+    <link rel="stylesheet" href="./styles.css?v=0.9.2" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -174,7 +174,7 @@
         </div>
         <form class="card form-card" id="sessionForm">
           <div class="form-grid">
-            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
+            <label class="field date-field"><span>Date</span><span class="date-control"><span class="date-display">Choose date</span><input type="date" name="date" required aria-label="Session date" /></span></label>
             <label class="field"><span>Session type</span><select name="type" id="sessionType" required></select></label>
           </div>
           <div id="dynamicLogFields"></div>
@@ -199,7 +199,7 @@
         <form class="card form-card" id="weeklyCheckinForm">
           <div class="card-heading"><div><p class="eyebrow">Weekly check-in</p><h2>Engine metrics</h2></div></div>
           <div class="form-grid">
-            <label class="field"><span>Date</span><input type="date" name="date" required /></label>
+            <label class="field date-field"><span>Date</span><span class="date-control"><span class="date-display">Choose date</span><input type="date" name="date" required aria-label="Weekly check-in date" /></span></label>
             <label class="field"><span>VO₂ max estimate</span><input type="number" name="vo2" min="10" max="90" step="0.1" /></label>
             <label class="field"><span>Resting HR</span><input type="number" name="restingHr" min="30" max="150" /></label>
             <label class="field"><span>Body weight</span><input type="number" name="weight" min="80" max="500" step="0.1" /></label>
@@ -305,6 +305,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.9.0"></script>
+    <script src="./app.js?v=0.9.2"></script>
   </body>
 </html>
