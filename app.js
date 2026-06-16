@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.4";
+const APP_VERSION = "0.9.6";
 const APP_UPDATED = "June 15, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -291,7 +291,7 @@ function migrate(raw) {
   next.meta.badgeUnlocksShown ??= {};
   next.meta.badgeUnlockedAt ??= {};
   next.meta.timer ??= null;
-  return next;
+  return dedupeSessions(next);
 }
 
 let state = loadState();
@@ -384,6 +384,155 @@ function planFor(date = activeDate()) {
   };
 }
 function latest(list) { return [...list].sort((a, b) => String(a.date).localeCompare(String(b.date))).at(-1); }
+function slugify(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-");
+}
+function programStartFor(appState, programId) {
+  return atNoon(appState.programStarts?.[programId] || appState.setup?.startDate || DEFAULT_START);
+}
+function plannedInfoForState(appState, dateValue, programId = appState.selectedProgram || "vo2-rebuild") {
+  const program = PROGRAMS[programId] || PROGRAMS["vo2-rebuild"];
+  const date = atNoon(typeof dateValue === "string" ? dateValue : dateKey(dateValue));
+  const start = programStartFor(appState, programId);
+  const index = Math.max(0, Math.min(83, Math.floor((date - start) / 86400000)));
+  const weekNumber = Math.floor(index / 7) + 1;
+  const dayNumber = index % 7 + 1;
+  const plan = program.weeks[weekNumber - 1]?.days[dayNumber - 1] || program.weeks[0].days[0];
+  return { program, plan, weekNumber, dayNumber };
+}
+function plannedSessionId(date, programId, weekNumber, dayNumber, sessionType) {
+  return `${date}__${programId}__week-${weekNumber}__day-${dayNumber}__${slugify(sessionType)}`;
+}
+function plannedSessionIdFor(date, programId = state.selectedProgram) {
+  const info = plannedInfoForState(state, date, programId);
+  return plannedSessionId(date, programId, info.weekNumber, info.dayNumber, info.plan.type);
+}
+function manualSessionId(date, sessionType) {
+  return `${date}__manual__${Date.now()}__${slugify(sessionType)}`;
+}
+function sessionTypeOf(session) {
+  return session?.sessionType || session?.plannedType || session?.type || "";
+}
+function plannedSessionFor(date = dateKey(activeDate()), programId = state.selectedProgram) {
+  const id = plannedSessionIdFor(date, programId);
+  return state.sessions.find(session => session.id === id) || null;
+}
+function bestValue(...values) {
+  return values.find(value => value !== undefined && value !== null && value !== "") ?? "";
+}
+function bestNumber(...values) {
+  const value = values.find(item => item !== undefined && item !== null && item !== "" && !Number.isNaN(Number(item)));
+  return value === undefined ? 0 : Number(value) || 0;
+}
+function mergedNotes(a = "", b = "") {
+  const first = String(a || "").trim();
+  const second = String(b || "").trim();
+  if (!first) return second;
+  if (!second || first === second) return first;
+  if (first.includes(second)) return first;
+  if (second.includes(first)) return second;
+  return first.length >= second.length ? `${first}\n\n${second}` : `${second}\n\n${first}`;
+}
+function strongerStatus(a, b) {
+  const rank = { planned: 0, skipped: 1, reduced: 2, completed: 3 };
+  return (rank[b] ?? 0) >= (rank[a] ?? 0) ? b : a;
+}
+function normalizeSessionRecord(record, appState = state) {
+  const next = { ...record };
+  const date = next.date || dateKey(activeDate());
+  const programId = next.programId || appState.selectedProgram || "vo2-rebuild";
+  const info = plannedInfoForState(appState, date, programId);
+  const existingType = sessionTypeOf(next);
+  const appearsPlanned = next.source === "planned" || (
+    next.source !== "manual" &&
+    existingType === info.plan.type
+  );
+  const source = appearsPlanned ? "planned" : "manual";
+  const sessionType = source === "planned" ? info.plan.type : (existingType || next.type || "Manual session");
+  const id = source === "planned"
+    ? plannedSessionId(date, programId, info.weekNumber, info.dayNumber, sessionType)
+    : (next.id || manualSessionId(date, sessionType));
+  const minutes = bestNumber(next.duration, next.minutes);
+  const averageHR = bestNumber(next.averageHR, next.avgHr);
+  const now = new Date().toISOString();
+  return {
+    ...next,
+    id,
+    date,
+    programId,
+    weekNumber: source === "planned" ? info.weekNumber : bestNumber(next.weekNumber),
+    dayNumber: source === "planned" ? info.dayNumber : bestNumber(next.dayNumber),
+    source,
+    status: next.status || (source === "planned" ? "completed" : "completed"),
+    sessionType,
+    type: next.type || sessionType,
+    plannedType: source === "planned" ? sessionType : next.plannedType,
+    readinessColor: next.readinessColor || next.readiness || "",
+    duration: minutes,
+    minutes,
+    distance: bestNumber(next.distance),
+    averageHR,
+    avgHr: averageHR,
+    maxHR: bestNumber(next.maxHR, next.maxHr),
+    maxHr: bestNumber(next.maxHr, next.maxHR),
+    effort: bestNumber(next.effort),
+    pain: bestNumber(next.pain),
+    breathing: next.breathing || "Normal",
+    notes: String(next.notes || "").trim(),
+    createdAt: next.createdAt || now,
+    updatedAt: next.updatedAt || next.createdAt || now
+  };
+}
+function mergeSessionRecords(a, b, appState = state) {
+  const first = normalizeSessionRecord(a, appState);
+  const second = normalizeSessionRecord(b, appState);
+  const merged = { ...first, ...second };
+  ["duration", "minutes", "distance", "averageHR", "avgHr", "maxHR", "maxHr", "effort", "pain", "energy", "confidence", "rounds", "hardSeconds", "recoverySeconds", "packWeight", "elevation"].forEach(key => {
+    merged[key] = bestNumber(second[key], first[key]);
+  });
+  merged.status = strongerStatus(first.status, second.status);
+  merged.readinessColor = bestValue(second.readinessColor, first.readinessColor);
+  merged.breathing = bestValue(second.breathing, first.breathing, "Normal");
+  merged.notes = mergedNotes(first.notes, second.notes);
+  merged.createdAt = [first.createdAt, second.createdAt].filter(Boolean).sort()[0] || new Date().toISOString();
+  merged.updatedAt = [first.updatedAt, second.updatedAt, new Date().toISOString()].filter(Boolean).sort().at(-1);
+  return normalizeSessionRecord(merged, appState);
+}
+function dedupeSessions(appState) {
+  const seen = new Map();
+  const output = [];
+  for (const item of Array.isArray(appState.sessions) ? appState.sessions : []) {
+    const normalized = normalizeSessionRecord(item, appState);
+    const key = normalized.source === "planned" ? normalized.id : normalized.id || manualSessionId(normalized.date, normalized.sessionType);
+    if (normalized.source === "planned" && seen.has(key)) {
+      output[seen.get(key)] = mergeSessionRecords(output[seen.get(key)], normalized, appState);
+    } else {
+      seen.set(key, output.length);
+      output.push(normalized);
+    }
+  }
+  appState.sessions = output.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.createdAt).localeCompare(String(b.createdAt)));
+  return appState;
+}
+function upsertSession(record) {
+  const normalized = normalizeSessionRecord(record);
+  const existingIndex = state.sessions.findIndex(session => session.id === normalized.id);
+  if (existingIndex >= 0) {
+    state.sessions[existingIndex] = mergeSessionRecords(state.sessions[existingIndex], {
+      ...normalized,
+      updatedAt: new Date().toISOString()
+    });
+    return state.sessions[existingIndex];
+  }
+  state.sessions.push({ ...normalized, createdAt: normalized.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+  return state.sessions.at(-1);
+}
 
 function adjustedPlan(plan, color) {
   if (color !== "yellow" && color !== "red") return plan;
@@ -748,12 +897,8 @@ function renderToday() {
   const raw = planFor(date);
   const readiness = currentReadiness();
   const plan = adjustedPlan(raw, readiness.color);
-  const matching = state.sessions.find(session =>
-    session.date === dateKey(date) &&
-    session.programId === state.selectedProgram &&
-    (session.status || session.type === raw.type || session.plannedType === raw.type)
-  );
-  const completed = matching?.status === "completed" || (matching && !matching.status);
+  const matching = plannedSessionFor(dateKey(date));
+  const completed = matching?.status === "completed";
   document.querySelector("#dateLabel").textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   document.querySelector("#phaseLabel").textContent = `Week ${raw.week}, Day ${raw.day} · ${phaseName(raw.weekData.phase)} · ${raw.weekData.theme}`;
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
@@ -767,7 +912,7 @@ function renderToday() {
   document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${raw.week}, Day ${raw.day} · ${raw.type}</span>`;
   document.querySelector("#todayWorkout").textContent = plan.title;
   document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : completed ? "Completed today" : raw.title;
-  document.querySelector("#todayStatus").classList.toggle("done", !!matching);
+  document.querySelector("#todayStatus").classList.toggle("done", completed);
   document.querySelector("#adaptationBanner").innerHTML = readiness.color === "yellow"
     ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>${plan.minutes} min</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message"><strong>Adjustment: Yellow day, reduced about 35%.</strong> Goal: ${plan.adaptation}</div>`
     : readiness.color === "red"
@@ -925,15 +1070,158 @@ function dynamicFields(type) {
 function sessionLogHeader(type) {
   return `<div class="session-log-header">${sessionIcon(type)}<div><span>Logging</span><strong>${type}</strong></div></div>`;
 }
-function renderLog() {
+function setFormValue(form, name, value) {
+  const field = form.elements[name];
+  if (!field || value === undefined || value === null) return;
+  field.value = value;
+}
+function setLogModeCopy(mode, session = null) {
+  const status = document.querySelector("#sessionEditStatus");
+  const submit = document.querySelector("#sessionSubmitButton");
+  if (!status || !submit) return;
+  if (mode === "manual") {
+    status.textContent = "Manual extra session";
+    submit.textContent = session?.id ? "Update session" : "Save session locally";
+  } else {
+    status.textContent = "Editing today’s planned session";
+    submit.textContent = "Update session";
+  }
+}
+function fillSessionForm(session, mode = "planned") {
   const form = document.querySelector("#sessionForm");
-  if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
+  if (!form) return;
+  form.dataset.mode = mode;
+  form.elements.editingId.value = session?.id || "";
+  form.elements.source.value = mode;
+  setFormValue(form, "date", session.date);
+  setFormValue(form, "type", session.type || session.sessionType);
   syncDateControl(form.elements.date);
   document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(form.elements.type.value);
-  const logs = [...state.sessions].filter(session => session.programId === state.selectedProgram).sort((a, b) => b.date.localeCompare(a.date));
+  [
+    "minutes", "duration", "distance", "avgHr", "averageHR", "maxHr", "maxHR", "effort", "energy", "confidence",
+    "breathing", "pain", "rounds", "hardSeconds", "recoverySeconds", "packWeight", "elevation", "terrain",
+    "route", "talkTest", "controlledFinish", "painNotes", "bodyArea", "recoveryNotes", "notes"
+  ].forEach(name => setFormValue(form, name, session[name]));
+  if (session.averageHR && form.elements.avgHr) form.elements.avgHr.value = session.averageHR;
+  if (session.maxHR && form.elements.maxHr) form.elements.maxHr.value = session.maxHR;
+  setLogModeCopy(mode, session);
+}
+function plannedSessionDraft(date = dateKey(activeDate())) {
+  const rawInfo = plannedInfoForState(state, date, state.selectedProgram);
+  const planned = plannedSessionFor(date) || {};
+  const readiness = state.readiness[date] || {};
+  const dateObj = atNoon(date);
+  const raw = planFor(dateObj);
+  const plan = adjustedPlan(raw, readiness.color);
+  return normalizeSessionRecord({
+    ...planned,
+    id: plannedSessionId(date, state.selectedProgram, rawInfo.weekNumber, rawInfo.dayNumber, rawInfo.plan.type),
+    date,
+    programId: state.selectedProgram,
+    weekNumber: rawInfo.weekNumber,
+    dayNumber: rawInfo.dayNumber,
+    source: "planned",
+    status: planned.status || "planned",
+    type: rawInfo.plan.type,
+    sessionType: rawInfo.plan.type,
+    plannedType: rawInfo.plan.type,
+    minutes: planned.minutes || plan.minutes,
+    duration: planned.duration || planned.minutes || plan.minutes,
+    effort: planned.effort || Number(String(plan.effort).match(/\d+/)?.[0] || 5),
+    readinessColor: planned.readinessColor || readiness.color || "green",
+    notes: planned.notes || state.meta.todayNotes[date] || ""
+  });
+}
+function loadPlannedLogForm(force = false) {
+  const form = document.querySelector("#sessionForm");
+  if (!form || (!force && form.dataset.mode === "manual")) return;
+  fillSessionForm(plannedSessionDraft(), "planned");
+}
+function startManualSession() {
+  const form = document.querySelector("#sessionForm");
+  if (!form) return;
+  const date = form.elements.date.value || dateKey(activeDate());
+  const type = form.elements.type.value || planFor().type;
+  form.reset();
+  form.elements.date.value = date;
+  form.elements.type.value = type;
+  syncDateControl(form.elements.date);
+  fillSessionForm({
+    id: "",
+    date,
+    type,
+    sessionType: type,
+    source: "manual",
+    status: "completed",
+    minutes: "",
+    effort: "",
+    breathing: "Normal",
+    pain: 0,
+    notes: ""
+  }, "manual");
+}
+function collectSessionForm(form) {
+  const data = Object.fromEntries(new FormData(form));
+  ["minutes","duration","effort","avgHr","averageHR","maxHr","maxHR","energy","confidence","pain","distance","elevation","pace","rounds","hardSeconds","recoverySeconds","packWeight","feetPain","jointPain"]
+    .forEach(key => { if (key in data) data[key] = Number(data[key]) || 0; });
+  Object.keys(data).filter(key => /^(sets|reps|weight|rpe)\d+$/.test(key))
+    .forEach(key => data[key] = Number(data[key]) || 0);
+  data.programId = state.selectedProgram;
+  data.source = data.source === "manual" ? "manual" : "planned";
+  data.status = "completed";
+  data.sessionType = data.type;
+  data.duration = bestNumber(data.duration, data.minutes);
+  data.minutes = bestNumber(data.minutes, data.duration);
+  data.averageHR = bestNumber(data.averageHR, data.avgHr);
+  data.avgHr = data.averageHR;
+  data.maxHR = bestNumber(data.maxHR, data.maxHr);
+  data.maxHr = data.maxHR;
+  data.readinessColor = state.readiness[data.date]?.color || "";
+  if (data.source === "planned") {
+    const info = plannedInfoForState(state, data.date, state.selectedProgram);
+    data.id = plannedSessionId(data.date, state.selectedProgram, info.weekNumber, info.dayNumber, info.plan.type);
+    data.weekNumber = info.weekNumber;
+    data.dayNumber = info.dayNumber;
+    data.type = info.plan.type;
+    data.sessionType = info.plan.type;
+    data.plannedType = info.plan.type;
+  } else {
+    data.id = data.editingId || manualSessionId(data.date, data.type);
+  }
+  delete data.editingId;
+  return data;
+}
+function upsertRuckForSession(session) {
+  if (session.type !== "Long Walk/Hike/Ruck" && session.sessionType !== "Long Walk/Hike/Ruck") return;
+  const item = {
+    sessionId: session.id,
+    date: session.date,
+    miles: session.distance,
+    packWeight: session.packWeight,
+    elevation: session.elevation,
+    minutes: session.minutes,
+    terrain: session.terrain,
+    pain: session.pain,
+    notes: session.painNotes || session.notes
+  };
+  const index = state.rucks.findIndex(ruck => ruck.sessionId === session.id);
+  if (index >= 0) state.rucks[index] = item;
+  else state.rucks.push(item);
+}
+function renderLog() {
+  const form = document.querySelector("#sessionForm");
+  if (!form.dataset.mode) loadPlannedLogForm(true);
+  if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
+  syncDateControl(form.elements.date);
+  if (!document.querySelector("#dynamicLogFields").innerHTML) document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(form.elements.type.value);
+  const unique = new Map();
+  state.sessions
+    .filter(session => session.programId === state.selectedProgram)
+    .forEach(session => unique.set(session.id, session));
+  const logs = [...unique.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   document.querySelector("#sessionHistory").innerHTML = `<article class="card"><p class="eyebrow">Session history</p><h2>${logs.length} logged session${logs.length === 1 ? "" : "s"}</h2>${logs.slice(0, 20).map(log => `
-    <div class="history-card"><span class="history-icon">${sessionIcon(log.type)}</span><time>${atNoon(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
-    <div><strong>${log.type}</strong><span>${log.minutes} min · effort ${log.effort}/10${log.avgHr ? ` · ${log.avgHr} bpm` : ""}</span></div><strong>${log.pain || 0}/10</strong></div>`).join("")}</article>`;
+    <div class="history-card"><span class="history-icon">${sessionIcon(sessionTypeOf(log))}</span><time>${atNoon(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
+    <div><strong>${sessionTypeOf(log)}</strong><span>${log.source === "manual" ? "Extra · " : ""}${log.minutes || log.duration || 0} min · effort ${log.effort || 0}/10${log.avgHr || log.averageHR ? ` · ${log.avgHr || log.averageHR} bpm` : ""}</span></div><strong>${log.pain || 0}/10</strong></div>`).join("")}</article>`;
 }
 
 function latestVo2() {
@@ -1069,13 +1357,14 @@ function showOnboarding() {
   document.querySelector("#onboarding").hidden = false;
 }
 let updateMiniWorkout = () => {};
-function centerActiveNavItem(target) {
+function updateNavActiveIndicator(target) {
+  const nav = document.querySelector("#bottomNav");
   const selector = target ? `.bottom-nav a[data-target="${target}"]` : ".bottom-nav a.active";
   const activeLink = document.querySelector(selector);
-  if (!activeLink) return;
-  const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  if (!nav || !activeLink) return;
   requestAnimationFrame(() => {
-    activeLink.scrollIntoView({ behavior, block: "nearest", inline: "center" });
+    nav.style.setProperty("--active-x", `${activeLink.offsetLeft}px`);
+    nav.style.setProperty("--active-w", `${activeLink.offsetWidth}px`);
   });
 }
 function navigate(target) {
@@ -1095,7 +1384,7 @@ function navigate(target) {
   state.meta.lastOpenedDate = dateKey(today());
   saveState();
   updateMiniWorkout();
-  centerActiveNavItem(target);
+  updateNavActiveIndicator(target);
   window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 function toast(message) {
@@ -1188,31 +1477,41 @@ function renderSavedState() {
 function upsertTodaySession(status) {
   const date = dateKey(activeDate());
   const raw = planFor();
+  const readiness = currentReadiness();
   const plan = adjustedPlan(raw, currentReadiness().color);
-  const index = state.sessions.findIndex(session =>
-    session.date === date &&
-    session.programId === state.selectedProgram &&
-    (session.status || session.type === raw.type || session.plannedType === raw.type)
-  );
-  const existing = index >= 0 ? state.sessions[index] : null;
-  const session = {
+  const existing = plannedSessionFor(date);
+  const session = upsertSession({
     ...(existing || {}),
-    id: existing?.id || `${date}-${raw.type}-${Date.now()}`,
     date,
-    type: status === "skipped" ? "Rest" : plan.type,
+    type: raw.type,
+    sessionType: raw.type,
     plannedType: raw.type,
+    source: "planned",
+    weekNumber: raw.week,
+    dayNumber: raw.day,
     minutes: status === "skipped" ? 0 : plan.minutes,
+    duration: status === "skipped" ? 0 : plan.minutes,
     effort: status === "skipped" ? 0 : Number(String(plan.effort).match(/\d+/)?.[0] || 5),
     notes: document.querySelector("#workoutNotes").value.trim(),
     pain: Number(existing?.pain || 0),
     confidence: Number(existing?.confidence || 0),
     breathing: existing?.breathing || "Normal",
     programId: state.selectedProgram,
+    readinessColor: readiness.color || "green",
     status
-  };
-  if (index >= 0) state.sessions[index] = session;
-  else state.sessions.push(session);
+  });
   state.meta.todayNotes[date] = session.notes;
+  return session;
+}
+function saveTodayNotes(note) {
+  const date = dateKey(activeDate());
+  state.meta.todayNotes[date] = note;
+  const existing = plannedSessionFor(date);
+  if (existing) {
+    existing.notes = String(note || "").trim();
+    existing.updatedAt = new Date().toISOString();
+  }
+  saveState();
 }
 
 const timerState = {
@@ -1381,7 +1680,7 @@ if (settingsDialog?.open) settingsDialog.close();
 function fallbackNavigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
   document.querySelectorAll(".bottom-nav a").forEach(link => link.classList.toggle("active", link.dataset.target === target));
-  centerActiveNavItem(target);
+  updateNavActiveIndicator(target);
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
@@ -1391,6 +1690,7 @@ let navExpandLockUntil = 0;
 
 function setNavCompact(compact) {
   bottomNav.classList.toggle("compact", compact);
+  updateNavActiveIndicator();
 }
 
 function expandNavForInteraction() {
@@ -1428,6 +1728,8 @@ window.addEventListener("scroll", () => {
 bottomNav.addEventListener("pointerdown", expandNavForInteraction);
 bottomNav.addEventListener("focusin", expandNavForInteraction);
 bottomNav.addEventListener("keydown", expandNavForInteraction);
+window.addEventListener("resize", () => updateNavActiveIndicator(), { passive: true });
+window.addEventListener("orientationchange", () => updateNavActiveIndicator(), { passive: true });
 
 document.querySelector("#onboardingForm")?.addEventListener("submit", event => {
   event.preventDefault();
@@ -1464,14 +1766,13 @@ document.querySelector("#readinessNote")?.addEventListener("change", event => {
 });
 let noteSaveTimer = null;
 document.querySelector("#workoutNotes")?.addEventListener("input", event => {
-  state.meta.todayNotes[dateKey(activeDate())] = event.target.value;
-  saveState();
+  saveTodayNotes(event.target.value);
   clearTimeout(noteSaveTimer);
   noteSaveTimer = setTimeout(() => savedLocally(), 700);
 });
 document.querySelector("#workoutNotes")?.addEventListener("change", event => {
   clearTimeout(noteSaveTimer);
-  state.meta.todayNotes[dateKey(activeDate())] = event.target.value.trim();
+  saveTodayNotes(event.target.value.trim());
   savedLocally();
 });
 document.querySelector("#completeTodayButton")?.addEventListener("click", () => {
@@ -1550,34 +1851,36 @@ document.addEventListener("keydown", event => {
 });
 document.querySelector("#logTodayButton")?.addEventListener("click", () => {
   navigate("log"); history.replaceState(null, "", "#log");
-  const plan = adjustedPlan(planFor(), currentReadiness().color);
-  const form = document.querySelector("#sessionForm");
-  form.elements.date.value = dateKey(activeDate());
-  syncDateControl(form.elements.date);
-  form.elements.type.value = plan.type;
-  document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(plan.type);
-  form.elements.minutes.value = plan.minutes;
-  form.elements.effort.value = Number(String(plan.effort).match(/\d+/)?.[0] || 5);
-  form.elements.notes.value = document.querySelector("#workoutNotes").value;
+  const draft = plannedSessionDraft();
+  draft.notes = document.querySelector("#workoutNotes").value || draft.notes;
+  fillSessionForm(draft, "planned");
 });
-document.querySelector("#sessionType")?.addEventListener("change", event => document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(event.target.value));
+document.querySelector("#addExtraSession")?.addEventListener("click", startManualSession);
+document.querySelector("#sessionForm")?.elements.date?.addEventListener("change", event => {
+  const form = document.querySelector("#sessionForm");
+  if (form?.dataset.mode === "planned") fillSessionForm(plannedSessionDraft(event.target.value), "planned");
+});
+document.querySelector("#sessionType")?.addEventListener("change", event => {
+  const form = document.querySelector("#sessionForm");
+  if (form?.dataset.mode === "planned") {
+    const date = form.elements.date.value || dateKey(activeDate());
+    fillSessionForm(plannedSessionDraft(date), "planned");
+    return;
+  }
+  document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(event.target.value);
+  setLogModeCopy("manual");
+});
 document.querySelector("#sessionForm")?.addEventListener("submit", event => {
   event.preventDefault();
   const earnedBefore = earnedBadgeWeeks();
-  const data = Object.fromEntries(new FormData(event.currentTarget));
-  ["minutes","effort","avgHr","maxHr","energy","confidence","pain","distance","elevation","pace","rounds","hardSeconds","recoverySeconds","packWeight","feetPain","jointPain"]
-    .forEach(key => { if (key in data) data[key] = Number(data[key]) || 0; });
-  Object.keys(data).filter(key => /^(sets|reps|weight|rpe)\d+$/.test(key))
-    .forEach(key => data[key] = Number(data[key]) || 0);
-  data.programId = state.selectedProgram;
-  data.id = `${data.date}-${data.type}-${Date.now()}`;
-  state.sessions.push(data);
-  if (data.type === "Long Walk/Hike/Ruck") state.rucks.push({ date: data.date, miles: data.distance, packWeight: data.packWeight, elevation: data.elevation, minutes: data.minutes, terrain: data.terrain, pain: data.pain, notes: data.painNotes || data.notes });
+  const data = collectSessionForm(event.currentTarget);
+  const session = upsertSession(data);
+  upsertRuckForSession(session);
+  if (session.source === "planned") state.meta.todayNotes[session.date] = session.notes;
   event.currentTarget.reset();
-  event.currentTarget.elements.date.value = dateKey(activeDate());
-  syncDateControl(event.currentTarget.elements.date);
   populateSessionTypes();
-  savedLocally("Session saved locally ✓");
+  loadPlannedLogForm(true);
+  savedLocally(session.source === "planned" ? "Session updated ✓" : "Session saved locally ✓");
   renderLog(); renderProgress(); renderToday();
   showNewBadge(earnedBefore);
 });

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.9.4" />
-    <link rel="stylesheet" href="./styles.css?v=0.9.4" />
+    <link rel="manifest" href="./manifest.webmanifest?v=0.9.6" />
+    <link rel="stylesheet" href="./styles.css?v=0.9.6" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -173,10 +173,16 @@
           <p>Fields adapt to the kind of work you completed.</p>
         </div>
         <form class="card form-card" id="sessionForm">
+          <div class="session-edit-bar">
+            <span class="status-pill" id="sessionEditStatus">Editing today’s planned session</span>
+            <button class="text-button inline" type="button" id="addExtraSession">+ Add extra session</button>
+          </div>
           <div class="form-grid">
             <label class="field date-field"><span>Date</span><span class="date-control"><span class="date-display">Choose date</span><input type="date" name="date" required aria-label="Session date" /></span></label>
             <label class="field"><span>Session type</span><select name="type" id="sessionType" required></select></label>
           </div>
+          <input type="hidden" name="editingId" />
+          <input type="hidden" name="source" value="planned" />
           <div id="dynamicLogFields"></div>
           <div class="form-grid">
             <label class="field"><span>Energy (1–10)</span><input type="number" name="energy" min="1" max="10" /></label>
@@ -185,7 +191,7 @@
             <label class="field"><span>Pain (0–10)</span><input type="number" name="pain" min="0" max="10" value="0" /></label>
           </div>
           <label class="field"><span>Notes</span><textarea name="notes" rows="3" placeholder="Terrain, splits, breathing, victory..."></textarea></label>
-          <button class="primary-button" type="submit">Save session locally</button>
+          <button class="primary-button" id="sessionSubmitButton" type="submit">Update session</button>
         </form>
         <div id="sessionHistory"></div>
       </section>
@@ -258,6 +264,7 @@
     </button>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="Primary navigation">
+      <div class="nav-active-indicator" aria-hidden="true"></div>
       <a class="active" href="#today" data-target="today"><span class="nav-icon">●</span><span class="nav-label">Today</span></a>
       <a href="#plan" data-target="plan"><span class="nav-icon">▦</span><span class="nav-label">Plan</span></a>
       <a href="#log" data-target="log"><span class="nav-icon">＋</span><span class="nav-label">Log</span></a>
@@ -305,6 +312,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.9.4"></script>
+    <script src="./app.js?v=0.9.6"></script>
   </body>
 </html>
