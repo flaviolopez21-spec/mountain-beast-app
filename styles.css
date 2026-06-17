@@ -842,6 +842,36 @@ code { padding: 2px 5px; border-radius: 5px; background: var(--sand); font-size:
 .badge-detail-facts span { color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .badge-detail-facts strong { margin-top: 4px; font-size: 12px; line-height: 1.4; }
 
+/* ─── SESSION SWAP PANEL ────────────────────────────────────────────────── */
+.session-swap-panel {
+  margin: 0 0 16px; padding: 14px 16px 16px; border-radius: 14px;
+  background: rgba(23,63,54,.06); border: 1px solid rgba(23,63,54,.12);
+  animation: rise .2s ease both;
+}
+.swap-panel-label { margin: 0 0 10px; }
+.session-type-chips {
+  display: flex; flex-wrap: wrap; gap: 7px;
+}
+.session-type-chip {
+  border: 1px solid var(--line); border-radius: 99px;
+  padding: 6px 13px; font: 700 12px/1.2 inherit; color: var(--ink-2);
+  background: white; cursor: pointer; transition: background .13s, color .13s, border-color .13s;
+}
+.session-type-chip:hover { background: var(--pine); color: white; border-color: var(--pine); }
+.session-type-chip.selected { background: var(--pine); color: white; border-color: var(--pine); }
+.swap-cancel-btn { margin-top: 10px; font-size: 12px; color: var(--ink-3); }
+.swap-active-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(23,63,54,.1); border-radius: 99px;
+  padding: 2px 8px 2px 6px; font-size: 11px; font-weight: 800;
+  color: var(--pine); margin-left: 8px; vertical-align: middle;
+}
+.swap-active-badge button {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--pine); font-size: 13px; line-height: 1; opacity: .6;
+}
+.swap-active-badge button:hover { opacity: 1; }
+
 /* ─── WEEK 1 COMPARISON CARD ─────────────────────────────────────────────── */
 .week1-row {
   display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center;

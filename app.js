@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -482,9 +482,14 @@ function normalizeSessionRecord(record, appState = state) {
     existingType === info.plan.type
   );
   const source = appearsPlanned ? "planned" : "manual";
-  const sessionType = source === "planned" ? info.plan.type : (existingType || next.type || "Manual session");
+  // For planned sessions: ID always uses the original planned type (so the slot is occupied),
+  // but sessionType can be overridden (e.g. swapped to Zone 2 Walk instead of Strength A)
+  const plannedBaseType = info.plan.type;
+  const sessionType = source === "planned"
+    ? (next.sessionType || next.type || plannedBaseType)
+    : (existingType || next.type || "Manual session");
   const id = source === "planned"
-    ? plannedSessionId(date, programId, info.weekNumber, info.dayNumber, sessionType)
+    ? plannedSessionId(date, programId, info.weekNumber, info.dayNumber, plannedBaseType)
     : (next.id || manualSessionId(date, sessionType));
   const minutes = bestNumber(next.duration, next.minutes);
   const averageHR = bestNumber(next.averageHR, next.avgHr);
@@ -500,7 +505,7 @@ function normalizeSessionRecord(record, appState = state) {
     status: next.status || (source === "planned" ? "completed" : "completed"),
     sessionType,
     type: next.type || sessionType,
-    plannedType: source === "planned" ? sessionType : next.plannedType,
+    plannedType: source === "planned" ? plannedBaseType : next.plannedType,
     readinessColor: next.readinessColor || next.readiness || "",
     duration: minutes,
     minutes,
@@ -927,22 +932,27 @@ function readinessScore() {
 
 function renderToday() {
   const date = activeDate();
-  const raw = planFor(date);
+  const plannedRaw = planFor(date);
+  const swapType = activeTodaySwap();
+  const raw = swapType ? sessionTemplateFor(swapType) : plannedRaw;
   const readiness = currentReadiness();
   const plan = adjustedPlan(raw, readiness.color);
   const matching = plannedSessionFor(dateKey(date));
   const completed = matching?.status === "completed";
   const reduced = matching?.status === "reduced";
   document.querySelector("#dateLabel").textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  document.querySelector("#phaseLabel").textContent = `Week ${raw.week} of 12 · ${raw.weekData.theme}`;
-  document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
+  document.querySelector("#phaseLabel").textContent = `Week ${plannedRaw.week} of 12 · ${plannedRaw.weekData.theme}`;
+  document.querySelector("#headerWeekLabel").textContent = `Week ${plannedRaw.week} of 12`;
   document.querySelector("#activeProgramLabel").textContent = `Current Goal: ${activeProgram().name}`;
   document.querySelector("#trainingForLabel").textContent = `Training For: ${trainingForText()}`;
   const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
   const headerToday = document.querySelector("#headerTodayLabel");
   if (headerToday) headerToday.textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
   renderWeekStrip();
-  document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${raw.week}, Day ${raw.day} · ${raw.type}</span>`;
+  const swapBadge = swapType
+    ? ` <span class="swap-active-badge">↺ Swapped<button id="resetSwapBtn" aria-label="Reset to planned session">×</button></span>`
+    : "";
+  document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${plannedRaw.week}, Day ${plannedRaw.day} · ${raw.type}</span>${swapBadge}`;
   document.querySelector("#todayWorkout").textContent = plan.title;
   document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : reduced ? "Minimum done" : completed ? "Completed today" : raw.title;
   document.querySelector("#todayStatus").classList.toggle("done", completed || reduced);
@@ -1655,9 +1665,11 @@ function sessionsCsv() {
 
 function upsertTodaySession(status, options = {}) {
   const date = dateKey(activeDate());
-  const raw = planFor();
+  const plannedRaw = planFor();
+  const swapType = activeTodaySwap();
+  const raw = swapType ? sessionTemplateFor(swapType) : plannedRaw;
   const readiness = currentReadiness();
-  const plan = adjustedPlan(raw, currentReadiness().color);
+  const plan = adjustedPlan(raw, readiness.color);
   const existing = plannedSessionFor(date);
   const minutes = status === "skipped" ? 0 : Number(options.minutes ?? plan.minutes);
   const effort = status === "skipped" ? 0 : Number(options.effort ?? String(plan.effort).match(/\d+/)?.[0] ?? 5);
@@ -1670,10 +1682,10 @@ function upsertTodaySession(status, options = {}) {
     date,
     type: raw.type,
     sessionType: raw.type,
-    plannedType: raw.type,
+    plannedType: plannedRaw.type,
     source: "planned",
-    weekNumber: raw.week,
-    dayNumber: raw.day,
+    weekNumber: plannedRaw.week,
+    dayNumber: plannedRaw.day,
     minutes,
     duration: minutes,
     effort,
@@ -1963,6 +1975,30 @@ function setupNavSlider() {
   });
 }
 
+/* ── Session type swap ──────────────────────────────────────────────────── */
+function sessionTemplateFor(type) {
+  // Find the first occurrence of this type in the program for real warmup/main/cooldown
+  const weeks = activeProgram().weeks;
+  const weekNum = currentWeek();
+  const weekData = weeks[Math.max(0, weekNum - 1)];
+  for (const week of weeks) {
+    const found = week.days.find(d => d.type === type);
+    if (found) return { ...found, week: weekNum, day: 0, weekData };
+  }
+  // Sensible fallbacks for types not in the program
+  const fallback = {
+    "Zone 2 Walk":          { minutes: 30, effort: "4/10", warmup: [],                main: ["Comfortable outdoor walk; full-sentence pace"], cooldown: ["2–5 min easy"] },
+    "Recovery Walk":        { minutes: 25, effort: "2–3/10", warmup: [],              main: ["Very easy walk, 20–30 min"], cooldown: ["Light mobility"] },
+    "Mobility":             { minutes: 20, effort: "2/10", warmup: [],               main: ["Foam roll, hip flexors, thoracic mobility"], cooldown: [] },
+    "Rest":                 { minutes: 0,  effort: "Rest", warmup: [],               main: ["Full rest. Eat well, sleep well."], cooldown: [] },
+  }[type] || { minutes: 30, effort: "5/10", warmup: [], main: [`${type} — standard effort`], cooldown: [] };
+  return { type, title: type, ...fallback, week: weekNum, day: 0, weekData };
+}
+
+function activeTodaySwap() {
+  return state.meta?.todaySwap?.[dateKey(activeDate())] || null;
+}
+
 /* ── Pre-session countdown ─────────────────────────────────────────────── */
 function openSessionCountdown(onFinish) {
   const overlay = document.querySelector("#sessionCountdown");
@@ -2234,6 +2270,42 @@ document.querySelector("#skipTodayButton")?.addEventListener("click", () => {
   savedLocally("Protected the streak ✓");
   renderToday();
   renderProgress();
+});
+
+// Session type swap
+document.querySelector("#swapSessionBtn")?.addEventListener("click", () => {
+  // Ensure meta exists
+  if (!state.meta.todaySwap) state.meta.todaySwap = {};
+  const panel = document.querySelector("#sessionSwapPanel");
+  if (!panel) return;
+  // Close the options details
+  document.querySelector("#todayOptions")?.removeAttribute("open");
+  // Populate chips
+  const allTypes = Object.keys(SESSION_CUES).filter(t => t !== "Rest");
+  const currentSwap = activeTodaySwap();
+  document.querySelector("#sessionTypeChips").innerHTML = allTypes.map(type =>
+    `<button class="session-type-chip${currentSwap === type ? " selected" : ""}" data-type="${type}">${type}</button>`
+  ).join("");
+  panel.hidden = false;
+});
+document.querySelector("#swapCancelBtn")?.addEventListener("click", () => {
+  document.querySelector("#sessionSwapPanel").hidden = true;
+});
+document.querySelector("#sessionTypeChips")?.addEventListener("click", e => {
+  const chip = e.target.closest(".session-type-chip");
+  if (!chip) return;
+  if (!state.meta.todaySwap) state.meta.todaySwap = {};
+  state.meta.todaySwap[dateKey(activeDate())] = chip.dataset.type;
+  saveState();
+  document.querySelector("#sessionSwapPanel").hidden = true;
+  renderToday();
+});
+// Reset swap badge handler — delegated since it's injected dynamically
+document.querySelector("#todayWorkoutCard")?.addEventListener("click", e => {
+  if (!e.target.closest("#resetSwapBtn")) return;
+  if (state.meta.todaySwap) delete state.meta.todaySwap[dateKey(activeDate())];
+  saveState();
+  renderToday();
 });
 document.querySelectorAll(".timer-kind-btn").forEach(btn => btn.addEventListener("click", () => {
   document.querySelectorAll(".timer-kind-btn").forEach(b => b.classList.remove("active"));
