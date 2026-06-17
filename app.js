@@ -137,8 +137,8 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.6";
-const APP_UPDATED = "June 15, 2026";
+const APP_VERSION = "0.9.7";
+const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
   "Long Walk/Hike/Ruck", "Strength A", "Strength B", "Recovery Walk",
@@ -254,10 +254,11 @@ function initialState() {
     exerciseHistory: {},
     rucks: [],
     habits: {},
+    weeklyNotes: {},
     adaptive: { adjustments: {}, decisions: {} },
     healthImport: null,
     meta: {
-      lastSavedAt: null, lastBackupAt: null, lastTab: "today", lastOpenedDate: null, todayNotes: {},
+      lastSavedAt: null, lastBackupAt: null, lastBackupSessionCount: 0, lastTab: "today", lastOpenedDate: null, todayNotes: {},
       badgeUnlocksShown: {}, badgeUnlockedAt: {}, timer: null
     }
   };
@@ -278,6 +279,7 @@ function migrate(raw) {
   next.exerciseHistory ??= {};
   next.rucks ??= [];
   next.habits ??= {};
+  next.weeklyNotes ??= {};
   next.adaptive ??= {};
   next.adaptive.adjustments ??= {};
   next.adaptive.decisions ??= {};
@@ -285,6 +287,7 @@ function migrate(raw) {
   next.meta ??= {};
   next.meta.lastSavedAt ??= null;
   next.meta.lastBackupAt ??= null;
+  next.meta.lastBackupSessionCount ??= 0;
   next.meta.lastTab ??= "today";
   next.meta.lastOpenedDate ??= null;
   next.meta.todayNotes ??= {};
@@ -384,6 +387,15 @@ function planFor(date = activeDate()) {
   };
 }
 function latest(list) { return [...list].sort((a, b) => String(a.date).localeCompare(String(b.date))).at(-1); }
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+function csvValue(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
 function slugify(value) {
   return String(value || "")
     .normalize("NFKD")
@@ -805,6 +817,10 @@ function programMetaBucket(key) {
   state.meta[key][state.selectedProgram] ??= {};
   return state.meta[key][state.selectedProgram];
 }
+function weeklyNotesBucket() {
+  state.weeklyNotes[state.selectedProgram] ??= {};
+  return state.weeklyNotes[state.selectedProgram];
+}
 function badgeRequirement(week) {
   return week === 1 ? "Log your first training session." : "Complete at least 50% of the planned sessions for this week.";
 }
@@ -899,6 +915,7 @@ function renderToday() {
   const plan = adjustedPlan(raw, readiness.color);
   const matching = plannedSessionFor(dateKey(date));
   const completed = matching?.status === "completed";
+  const reduced = matching?.status === "reduced";
   document.querySelector("#dateLabel").textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   document.querySelector("#phaseLabel").textContent = `Week ${raw.week}, Day ${raw.day} · ${phaseName(raw.weekData.phase)} · ${raw.weekData.theme}`;
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
@@ -911,8 +928,8 @@ function renderToday() {
   setRingProgress("#weekRing", raw.week / 12 * 360);
   document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${raw.week}, Day ${raw.day} · ${raw.type}</span>`;
   document.querySelector("#todayWorkout").textContent = plan.title;
-  document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : completed ? "Completed today" : raw.title;
-  document.querySelector("#todayStatus").classList.toggle("done", completed);
+  document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : reduced ? "Minimum done" : completed ? "Completed today" : raw.title;
+  document.querySelector("#todayStatus").classList.toggle("done", completed || reduced);
   document.querySelector("#adaptationBanner").innerHTML = readiness.color === "yellow"
     ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>${plan.minutes} min</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message"><strong>Adjustment: Yellow day, reduced about 35%.</strong> Goal: ${plan.adaptation}</div>`
     : readiness.color === "red"
@@ -953,6 +970,7 @@ function renderToday() {
   document.querySelector("#completeTodayButton").classList.toggle("completed", completed);
   document.querySelector("#todayCompletionStatus").textContent = matching?.status === "skipped"
     ? "Protected the streak. Tomorrow is still alive."
+    : reduced ? "Minimum version logged. Streak protected."
     : completed ? "Session complete. Nice work." : "";
   renderCompletionRecap(matching, raw, plan, readiness);
   document.querySelector("#intervalTimerButton").hidden = raw.type !== "VO₂ Intervals";
@@ -1221,7 +1239,32 @@ function renderLog() {
   const logs = [...unique.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   document.querySelector("#sessionHistory").innerHTML = `<article class="card"><p class="eyebrow">Session history</p><h2>${logs.length} logged session${logs.length === 1 ? "" : "s"}</h2>${logs.slice(0, 20).map(log => `
     <div class="history-card"><span class="history-icon">${sessionIcon(sessionTypeOf(log))}</span><time>${atNoon(log.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
-    <div><strong>${sessionTypeOf(log)}</strong><span>${log.source === "manual" ? "Extra · " : ""}${log.minutes || log.duration || 0} min · effort ${log.effort || 0}/10${log.avgHr || log.averageHR ? ` · ${log.avgHr || log.averageHR} bpm` : ""}</span></div><strong>${log.pain || 0}/10</strong></div>`).join("")}</article>`;
+    <div><strong>${escapeHtml(sessionTypeOf(log))}</strong><span>${log.source === "manual" ? "Extra · " : ""}${log.minutes || log.duration || 0} min · effort ${log.effort || 0}/10${log.avgHr || log.averageHR ? ` · ${log.avgHr || log.averageHR} bpm` : ""}</span></div><strong>${log.pain || 0}/10</strong>
+    <div class="history-actions"><button type="button" data-action="edit-session" data-session-id="${escapeHtml(log.id)}">Edit</button><button type="button" data-action="delete-session" data-session-id="${escapeHtml(log.id)}">Delete</button></div></div>`).join("")}</article>`;
+}
+function editSessionFromHistory(id) {
+  const session = state.sessions.find(item => item.id === id);
+  if (!session) return;
+  fillSessionForm(session, session.source === "manual" ? "manual" : "planned");
+  document.querySelector("#sessionForm")?.scrollIntoView({
+    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start"
+  });
+}
+function deleteSessionFromHistory(id) {
+  const session = state.sessions.find(item => item.id === id);
+  if (!session) return;
+  const label = `${sessionTypeOf(session)} on ${atNoon(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  if (!confirm(`Delete ${label}? This only removes it from this device.`)) return;
+  state.sessions = state.sessions.filter(item => item.id !== id);
+  state.rucks = state.rucks.filter(item => item.sessionId !== id);
+  if (session.source === "planned" && state.meta.todayNotes?.[session.date] === session.notes) delete state.meta.todayNotes[session.date];
+  const form = document.querySelector("#sessionForm");
+  if (form?.elements.editingId.value === id) loadPlannedLogForm(true);
+  savedLocally("Session deleted ✓");
+  renderLog();
+  renderProgress();
+  renderToday();
 }
 
 function latestVo2() {
@@ -1268,6 +1311,11 @@ function renderProgress() {
   const form = document.querySelector("#weeklyCheckinForm");
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
   syncDateControl(form.elements.date);
+  const noteWeek = currentWeek();
+  const noteInput = document.querySelector("#weeklyNoteText");
+  document.querySelector("#weeklyNoteWeek").textContent = noteWeek;
+  if (noteInput && document.activeElement !== noteInput) noteInput.value = weeklyNotesBucket()[noteWeek] || "";
+  document.querySelector("#weeklyNoteStatus").textContent = weeklyNotesBucket()[noteWeek] ? "Weekly note saved ✓" : "";
 }
 
 function renderSystemRings() {
@@ -1392,6 +1440,16 @@ function toast(message) {
   el.textContent = message; el.classList.add("show");
   setTimeout(() => el.classList.remove("show"), 2200);
 }
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 function showReward(badgeWeek = null) {
   const overlay = document.querySelector("#rewardOverlay");
   const art = document.querySelector("#rewardArt");
@@ -1468,18 +1526,58 @@ function renderSavedState() {
   const reminder = document.querySelector("#backupReminder");
   const backupTime = state.meta.lastBackupAt ? new Date(state.meta.lastBackupAt) : null;
   const days = backupTime ? Math.floor((Date.now() - backupTime.getTime()) / 86400000) : Infinity;
-  reminder.classList.toggle("fresh", days < 7);
-  reminder.textContent = days < 7
-    ? `Your data lives on this device. Private backup exported ${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}.`
-    : "Your data lives on this device. You haven’t backed up in 7 days. Export a private backup.";
+  const sessionsSinceBackup = Math.max(0, state.sessions.length - Number(state.meta.lastBackupSessionCount || 0));
+  reminder.classList.toggle("fresh", days < 7 && sessionsSinceBackup < 5);
+  reminder.textContent = sessionsSinceBackup >= 5
+    ? `You have ${sessionsSinceBackup} new session${sessionsSinceBackup === 1 ? "" : "s"} since your last backup. Export a private backup soon.`
+    : days < 7
+      ? `Your data lives on this device. Private backup exported ${days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`}.`
+      : "Your data lives on this device. You haven’t backed up in 7 days. Export a private backup.";
+  renderPwaStatus();
+}
+function renderPwaStatus() {
+  const el = document.querySelector("#pwaStatus");
+  if (!el) return;
+  const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const swSupported = "serviceWorker" in navigator;
+  const lastBackup = state.meta.lastBackupAt
+    ? new Date(state.meta.lastBackupAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "Never";
+  const sessionsSinceBackup = Math.max(0, state.sessions.length - Number(state.meta.lastBackupSessionCount || 0));
+  el.innerHTML = [
+    ["PWA installed", installed ? "Yes" : "Not yet / browser tab"],
+    ["Service worker", swSupported ? (navigator.serviceWorker?.controller ? "Active" : "Supported") : "Not supported here"],
+    ["Version", `TrainFor v${APP_VERSION}`],
+    ["Session logs", state.sessions.length],
+    ["Last backup", lastBackup],
+    ["New since backup", sessionsSinceBackup]
+  ].map(([label, value]) => `<div class="detail-row"><span>${label}</span><strong>${value}</strong></div>`).join("");
+}
+function sessionsCsv() {
+  const headers = [
+    "id", "date", "programId", "weekNumber", "dayNumber", "source", "status", "sessionType",
+    "duration", "distance", "averageHR", "maxHR", "effort", "pain", "breathing", "energy",
+    "confidence", "elevation", "packWeight", "terrain", "notes", "createdAt", "updatedAt"
+  ];
+  const rows = state.sessions
+    .filter(session => session.programId === state.selectedProgram)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map(session => headers.map(key => csvValue(key === "sessionType" ? sessionTypeOf(session) : session[key])).join(","));
+  return [headers.join(","), ...rows].join("\n");
 }
 
-function upsertTodaySession(status) {
+function upsertTodaySession(status, options = {}) {
   const date = dateKey(activeDate());
   const raw = planFor();
   const readiness = currentReadiness();
   const plan = adjustedPlan(raw, currentReadiness().color);
   const existing = plannedSessionFor(date);
+  const minutes = status === "skipped" ? 0 : Number(options.minutes ?? plan.minutes);
+  const effort = status === "skipped" ? 0 : Number(options.effort ?? String(plan.effort).match(/\d+/)?.[0] ?? 5);
+  const note = document.querySelector("#workoutNotes").value.trim();
+  const sessionNote = options.noteSuffix
+    ? note ? (note.includes(options.noteSuffix) ? note : `${note}\n\n${options.noteSuffix}`) : options.noteSuffix
+    : note;
   const session = upsertSession({
     ...(existing || {}),
     date,
@@ -1489,10 +1587,10 @@ function upsertTodaySession(status) {
     source: "planned",
     weekNumber: raw.week,
     dayNumber: raw.day,
-    minutes: status === "skipped" ? 0 : plan.minutes,
-    duration: status === "skipped" ? 0 : plan.minutes,
-    effort: status === "skipped" ? 0 : Number(String(plan.effort).match(/\d+/)?.[0] || 5),
-    notes: document.querySelector("#workoutNotes").value.trim(),
+    minutes,
+    duration: minutes,
+    effort,
+    notes: sessionNote,
     pain: Number(existing?.pain || 0),
     confidence: Number(existing?.confidence || 0),
     breathing: existing?.breathing || "Normal",
@@ -1790,6 +1888,12 @@ document.querySelector("#reduceTodayButton")?.addEventListener("click", () => {
   savedLocally("Yellow version ready ✓");
   renderToday();
 });
+document.querySelector("#minimumTodayButton")?.addEventListener("click", () => {
+  upsertTodaySession("reduced", { minutes: 20, effort: 3, noteSuffix: "Minimum version: 20 minutes completed." });
+  savedLocally("Minimum version logged ✓");
+  renderToday();
+  renderProgress();
+});
 document.querySelector("#skipTodayButton")?.addEventListener("click", () => {
   upsertTodaySession("skipped");
   savedLocally("Protected the streak ✓");
@@ -1856,6 +1960,12 @@ document.querySelector("#logTodayButton")?.addEventListener("click", () => {
   fillSessionForm(draft, "planned");
 });
 document.querySelector("#addExtraSession")?.addEventListener("click", startManualSession);
+document.querySelector("#sessionHistory")?.addEventListener("click", event => {
+  const button = event.target.closest("button[data-action][data-session-id]");
+  if (!button) return;
+  if (button.dataset.action === "edit-session") editSessionFromHistory(button.dataset.sessionId);
+  if (button.dataset.action === "delete-session") deleteSessionFromHistory(button.dataset.sessionId);
+});
 document.querySelector("#sessionForm")?.elements.date?.addEventListener("change", event => {
   const form = document.querySelector("#sessionForm");
   if (form?.dataset.mode === "planned") fillSessionForm(plannedSessionDraft(event.target.value), "planned");
@@ -1894,6 +2004,23 @@ document.querySelector("#weeklyCheckinForm")?.addEventListener("submit", event =
   if (data.weight) state.checkins.push({ date: data.date, weight: data.weight });
   savedLocally("Weekly check-in saved ✓");
   renderProgress(); renderToday();
+});
+let weeklyNoteSaveTimer = null;
+document.querySelector("#weeklyNoteText")?.addEventListener("input", event => {
+  weeklyNotesBucket()[currentWeek()] = event.target.value;
+  saveState();
+  document.querySelector("#weeklyNoteStatus").textContent = "Saving note...";
+  clearTimeout(weeklyNoteSaveTimer);
+  weeklyNoteSaveTimer = setTimeout(() => {
+    savedLocally("Weekly note saved ✓");
+    document.querySelector("#weeklyNoteStatus").textContent = "Weekly note saved ✓";
+  }, 700);
+});
+document.querySelector("#weeklyNoteText")?.addEventListener("change", event => {
+  clearTimeout(weeklyNoteSaveTimer);
+  weeklyNotesBucket()[currentWeek()] = event.target.value.trim();
+  savedLocally("Weekly note saved ✓");
+  renderProgress();
 });
 document.querySelector("#applyWeeklySuggestion")?.addEventListener("click", () => {
   const review = buildWeeklyReview();
@@ -1940,18 +2067,26 @@ document.querySelector("#programSelector")?.addEventListener("change", event => 
 document.querySelector("#settingsProgramSelector")?.addEventListener("change", event => changeProgram(event.target.value));
 
 const dialog = document.querySelector("#settingsDialog");
-document.querySelector("#settingsButton")?.addEventListener("click", () => dialog?.showModal());
+document.querySelector("#settingsButton")?.addEventListener("click", () => {
+  renderSavedState();
+  dialog?.showModal();
+});
 document.querySelector("#closeSettings")?.addEventListener("click", () => dialog?.close());
 document.querySelector("#editProfile")?.addEventListener("click", () => { dialog?.close(); showOnboarding(); });
 document.querySelector("#exportData")?.addEventListener("click", () => {
   state.meta.lastBackupAt = new Date().toISOString();
+  state.meta.lastBackupSessionCount = state.sessions.length;
   state.meta.lastSavedAt = state.meta.lastBackupAt;
   saveState();
   renderSavedState();
   const blob = new Blob([JSON.stringify({ version: 5, exportedAt: state.meta.lastBackupAt, state }, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob); const link = document.createElement("a");
-  link.href = url; link.download = `trainfor-backup-${dateKey(today())}.json`; link.click(); URL.revokeObjectURL(url);
+  downloadBlob(blob, `trainfor-backup-${dateKey(today())}.json`);
   toast("Private backup exported ✓");
+});
+document.querySelector("#exportCsv")?.addEventListener("click", () => {
+  const blob = new Blob([sessionsCsv()], { type: "text/csv;charset=utf-8" });
+  downloadBlob(blob, `trainfor-sessions-${dateKey(today())}.csv`);
+  toast("Sessions CSV exported ✓");
 });
 document.querySelector("#importData")?.addEventListener("change", async event => {
   try {
@@ -1966,7 +2101,7 @@ document.querySelector("#healthImport")?.addEventListener("change", async event 
   try {
     const xml = new DOMParser().parseFromString(await file.text(), "application/xml");
     if (xml.querySelector("parsererror") || !xml.querySelector("HealthData")) throw new Error();
-    const wanted = ["HKQuantityTypeIdentifierVO2Max","HKQuantityTypeIdentifierRestingHeartRate","HKQuantityTypeIdentifierHeartRate","HKQuantityTypeIdentifierStepCount","HKQuantityTypeIdentifierActiveEnergyBurned","HKQuantityTypeIdentifierAppleExerciseTime","HKCategoryTypeIdentifierSleepAnalysis"];
+    const wanted = ["HKQuantityTypeIdentifierVO2Max","HKQuantityTypeIdentifierRestingHeartRate","HKQuantityTypeIdentifierHeartRate","HKQuantityTypeIdentifierWalkingHeartRateAverage","HKQuantityTypeIdentifierStepCount","HKQuantityTypeIdentifierActiveEnergyBurned","HKQuantityTypeIdentifierAppleExerciseTime","HKCategoryTypeIdentifierSleepAnalysis"];
     const counts = {}, latestValues = {};
     xml.querySelectorAll("Record").forEach(record => {
       const type = record.getAttribute("type"); if (!wanted.includes(type)) return;
@@ -1974,7 +2109,14 @@ document.querySelector("#healthImport")?.addEventListener("change", async event 
       const endDate = record.getAttribute("endDate") || "";
       if (!latestValues[type] || endDate > latestValues[type].endDate) latestValues[type] = { value: record.getAttribute("value"), unit: record.getAttribute("unit"), endDate };
     });
-    state.healthImport = { fileName: file.name, importedAt: new Date().toISOString(), counts, latest: latestValues };
+    const workouts = [...xml.querySelectorAll("Workout")];
+    const latestWorkout = workouts.map(workout => ({
+      type: workout.getAttribute("workoutActivityType") || "Workout",
+      duration: workout.getAttribute("duration") || "",
+      unit: workout.getAttribute("durationUnit") || "min",
+      endDate: workout.getAttribute("endDate") || workout.getAttribute("startDate") || ""
+    })).sort((a, b) => String(a.endDate).localeCompare(String(b.endDate))).at(-1) || null;
+    state.healthImport = { fileName: file.name, importedAt: new Date().toISOString(), counts, latest: latestValues, workoutCount: workouts.length, latestWorkout };
     savedLocally("Apple Health imported ✓"); renderHealthSummary(); renderProgress(); renderToday();
   } catch { toast("Choose the extracted Apple Health export.xml file"); }
   event.target.value = "";
@@ -1996,7 +2138,25 @@ function renderHealthSummary() {
   const el = document.querySelector("#healthImportSummary");
   if (!health) { el.textContent = "No Apple Health file imported yet."; return; }
   const count = Object.values(health.counts || {}).reduce((a, b) => a + b, 0);
-  el.textContent = `${count.toLocaleString()} relevant records from ${health.fileName}. Latest VO₂ max: ${latestVo2().toFixed(1)}; resting HR: ${latestRestingHr() || "—"}.`;
+  const latestMetric = type => health.latest?.[type];
+  const metricText = type => {
+    const item = latestMetric(type);
+    if (!item) return "—";
+    const date = item.endDate ? new Date(item.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "date unknown";
+    return `${item.value || "—"}${item.unit ? ` ${item.unit}` : ""} · ${date}`;
+  };
+  const workout = health.latestWorkout;
+  el.innerHTML = [
+    ["File", escapeHtml(health.fileName)],
+    ["Relevant records", count.toLocaleString()],
+    ["Workout records", Number(health.workoutCount || 0).toLocaleString()],
+    ["VO₂ max", metricText("HKQuantityTypeIdentifierVO2Max")],
+    ["Resting HR", metricText("HKQuantityTypeIdentifierRestingHeartRate")],
+    ["Heart rate records", Number(health.counts?.HKQuantityTypeIdentifierHeartRate || 0).toLocaleString()],
+    ["Walking HR avg", metricText("HKQuantityTypeIdentifierWalkingHeartRateAverage")],
+    ["Exercise minutes", metricText("HKQuantityTypeIdentifierAppleExerciseTime")],
+    ["Latest workout", workout ? `${workout.type.replace("HKWorkoutActivityType", "")} · ${workout.duration || "—"} ${workout.unit || "min"}` : "—"]
+  ].map(([label, value]) => `<div class="detail-row"><span>${label}</span><strong>${value}</strong></div>`).join("");
 }
 function renderAll() {
   renderProgramSelectors(); populateSessionTypes(); renderToday(); renderPlan(); renderLog(); renderProgress(); renderCoach(); renderHealthSummary();

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.9.6" />
-    <link rel="stylesheet" href="./styles.css?v=0.9.6" />
+    <link rel="manifest" href="./manifest.webmanifest?v=0.9.7" />
+    <link rel="stylesheet" href="./styles.css?v=0.9.7" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -122,6 +122,7 @@
           <label class="field"><span>Session notes</span><textarea id="workoutNotes" rows="3" placeholder="Breathing, pace, confidence, wins..."></textarea></label>
           <div class="today-actions">
             <button class="primary-button" id="completeTodayButton">Complete Session</button>
+            <button class="secondary-button" id="minimumTodayButton">Do 20-minute minimum</button>
             <button class="secondary-button" id="reduceTodayButton">I need to reduce it</button>
             <button class="secondary-button" id="skipTodayButton">I need to skip today</button>
           </div>
@@ -232,6 +233,12 @@
           <details class="review-details"><summary>How calculated?</summary><p id="weeklyReviewDetails"></p></details>
         </article>
 
+        <article class="card weekly-note-card">
+          <div class="card-heading"><div><p class="eyebrow">Weekly note</p><h2>What worked this week?</h2></div></div>
+          <label class="field"><span>Private note for Week <span id="weeklyNoteWeek">1</span></span><textarea id="weeklyNoteText" rows="3" placeholder="What worked? What got in the way? What should next week respect?"></textarea></label>
+          <div class="saved-line"><span id="weeklyNoteStatus"></span><span>Saved on this device</span></div>
+        </article>
+
         <article class="card system-rings-card">
           <div class="card-heading"><div><p class="eyebrow">This week</p><h2>Engine · Chassis · Consistency</h2></div></div>
           <div class="system-rings" id="systemRings">
@@ -281,9 +288,11 @@
       <div class="import-summary" id="healthImportSummary"></div>
       <details class="setup-guide"><summary>Apple Watch and GitHub Pages</summary><p>GitHub Pages cannot directly access HealthKit. True automatic sync requires a signed native iPhone companion with user-approved HealthKit permissions. Never commit personal Health exports or backups to a public repository.</p></details>
       <button class="secondary-button" id="exportData">Export private backup</button>
+      <button class="secondary-button" id="exportCsv">Export sessions CSV</button>
       <div class="backup-reminder" id="backupReminder"></div>
       <label class="secondary-button file-button">Restore backup<input id="importData" type="file" accept="application/json" /></label>
       <button class="secondary-button" id="editProfile">Edit profile & start date</button>
+      <div class="setup-guide status-panel" id="pwaStatus"></div>
       <div class="app-version"><strong id="appVersion">TrainFor</strong><span id="appUpdated"></span></div>
       <button class="danger-button" id="resetData">Reset local data</button>
     </dialog>
@@ -312,6 +321,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.9.6"></script>
+    <script src="./app.js?v=0.9.7"></script>
   </body>
 </html>

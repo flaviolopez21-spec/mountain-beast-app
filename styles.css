@@ -245,7 +245,7 @@ h2 { margin-bottom: 7px; font-size: 22px; letter-spacing: -.025em; }
 .timer-actions { display: flex; gap: 7px; }
 .timer-actions button { min-height: 44px; border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.13); color: white; box-shadow: var(--glass-highlight-dark); backdrop-filter: blur(10px) saturate(130%); -webkit-backdrop-filter: blur(10px) saturate(130%); }
 .timer-finish { width: 100%; min-height: 46px; margin: -7px 0 16px; border: 0; border-radius: 13px; background: var(--lime); color: var(--pine); font-weight: 850; cursor: pointer; }
-.today-actions { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+.today-actions { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 8px; }
 .today-actions .secondary-button { margin: 0; }
 .saved-line { display: flex; justify-content: space-between; gap: 12px; min-height: 18px; margin-top: 10px; color: var(--muted); font-size: 11px; }
 .saved-line span:first-child { color: var(--pine-2); font-weight: 800; }
@@ -426,7 +426,7 @@ textarea { resize: vertical; }
 .strength-line strong { font-size: 12px; }
 .strength-line .field { margin: 0; }
 .strength-helper-slot { display: grid; gap: 7px; margin-top: 10px; }
-.history-card { display: grid; grid-template-columns: 38px auto 1fr auto; gap: 13px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }
+.history-card { display: grid; grid-template-columns: 38px auto 1fr auto auto; gap: 13px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }
 .history-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--sand); color: var(--pine-2); }
 .history-icon .session-icon { width: 23px; height: 23px; }
 .history-card time { color: var(--muted); font-size: 12px; }
@@ -434,6 +434,11 @@ textarea { resize: vertical; }
 .history-card span { color: var(--muted); font-size: 12px; margin-top: 3px; }
 .history-card .history-icon { margin-top: 0; color: var(--pine-2); }
 .history-card > strong { font-size: 20px; }
+.history-actions { display: flex; gap: 6px; }
+.history-actions button { border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; background: var(--sand); color: var(--pine-2); font-size: 11px; font-weight: 850; cursor: pointer; }
+.history-actions button[data-action="delete-session"] { color: var(--red); background: #faece9; }
+.status-panel { display: grid; gap: 7px; }
+.status-panel .detail-row { padding: 0; border: 0; }
 .ruck-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
 .ruck-stats div { padding: 12px; border-radius: 13px; background: var(--sand); }
 .ruck-stats span, .ruck-stats strong { display: block; }
@@ -468,6 +473,10 @@ textarea { resize: vertical; }
 .big-number { display: block; font-size: 60px; letter-spacing: -.06em; line-height: 1; }
 .highlight-card > span { display: block; color: #c8d5d1; font-size: 12px; margin: 5px 0 22px; }
 .detail-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid rgba(128,139,135,.22); font-size: 13px; }
+.detail-row span { color: var(--muted); }
+.detail-row strong { text-align: right; }
+.import-summary .detail-row, .status-panel .detail-row { padding: 8px 0; }
+.import-summary .detail-row:first-child, .status-panel .detail-row:first-child { border-top: 0; }
 .target-bar { height: 8px; margin: 24px 0 10px; overflow: hidden; border-radius: 10px; background: var(--sand); }
 .target-bar span { display: block; width: 72%; height: 100%; border-radius: inherit; background: var(--lime); }
 .chart { min-height: 230px; display: flex; align-items: end; gap: 8px; padding-top: 20px; overflow-x: auto; }
@@ -674,6 +683,7 @@ code { padding: 2px 5px; border-radius: 5px; background: var(--sand); font-size:
   .history-card time { grid-column: 2; grid-row: 1; align-self: end; }
   .history-card > div { grid-column: 2; }
   .history-card > strong { grid-column: 3; grid-row: 1 / span 2; }
+  .history-actions { grid-column: 1 / -1; justify-content: flex-end; }
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
   .recap-grid { grid-template-columns: repeat(2, 1fr); }
   .system-rings { grid-template-columns: 1fr; }
