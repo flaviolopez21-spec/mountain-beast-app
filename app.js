@@ -1627,7 +1627,7 @@ let navAnimId = null;
 const navEaseOut = t => 1 - Math.pow(1 - t, 3);
 const navEaseIn  = t => t * t * t;
 const navEaseInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const NAV_STRETCH = 0.32;   // 0 = rigid glide, 1 = extreme jelly; Instagram is gentle
+const NAV_STRETCH = 0.14;   // 0 = rigid glide, 1 = extreme jelly; iOS bars barely stretch
 function writeNavFrame(nav, f) {
   nav.style.setProperty("--active-x", `${f.left}px`);
   nav.style.setProperty("--active-w", `${f.width}px`);
@@ -2141,14 +2141,25 @@ function setupNavSlider() {
 
   nav.addEventListener("touchmove", e => {
     if (startX === null) return;
-    if (!isDragging && Math.abs(e.touches[0].clientX - startX) < 8) return;
+    const clientX = e.touches[0].clientX;
+    if (!isDragging && Math.abs(clientX - startX) < 8) return;
     isDragging = true;
     nav.classList.add("nav-dragging");
-    const idx = nearestIndex(e.touches[0].clientX);
-    if (idx === dragIdx) return;          // only re-fuse when crossing into a new tab
-    dragIdx = idx;
-    links().forEach((l, i) => l.classList.toggle("active", i === idx));
-    updateNavActiveIndicator(TABS[idx], true);  // stretch + goo merge toward new tab
+    cancelAnimationFrame(navAnimId);
+    // Continuously follow the finger between adjacent tabs (no tab-to-tab snapping)
+    const ls = links();
+    const x = clientX - nav.getBoundingClientRect().left;
+    const centers = ls.map(l => l.offsetLeft + l.offsetWidth / 2);
+    let i = 0;
+    while (i < ls.length - 1 && x >= centers[i + 1]) i++;
+    const a = ls[i], b = ls[Math.min(ls.length - 1, i + 1)];
+    const span = centers[i + 1] - centers[i];
+    const t = a === b || !span ? 0 : Math.max(0, Math.min(1, (x - centers[i]) / span));
+    const left = a.offsetLeft + (b.offsetLeft - a.offsetLeft) * t;
+    const width = a.offsetWidth + (b.offsetWidth - a.offsetWidth) * t;
+    writeNavFrame(nav, { left, width, sy: 1, leadL: left, leadW: width, trailL: left, trailW: width, trailO: 0 });
+    const idx = nearestIndex(clientX);
+    if (idx !== dragIdx) { dragIdx = idx; ls.forEach((l, k) => l.classList.toggle("active", k === idx)); }
   }, { passive: true });
 
   nav.addEventListener("touchend", e => {
