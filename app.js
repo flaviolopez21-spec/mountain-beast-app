@@ -124,6 +124,136 @@ const VO2_WEEKS = [
 ];
 const STRENGTH_A = ["Leg press or goblet squat — 3×5","DB bench press or push-ups — 3×5","Seated cable row — 3×8","RDL or hamstring curl — 3×8","Plank — 3×20–40 sec"];
 const STRENGTH_B = ["Trap bar deadlift, RDL, or hinge machine — 3×5","Split squat or step-up — 2×8/leg","Lat pulldown — 3×8","DB shoulder press — 3×5","Dead bug — 3×8/side"];
+
+/* ── Cardio + Hiking Focus program ─────────────────────────────────────── */
+// Mobility circuits — bodyweight + bands + light dumbbells, no gym needed
+const MOB_A1 = ["Banded clamshell — 3×12/side","Glute bridge — 3×15","Step-up (stair or chair) — 3×10/leg","Push-up — 3×8","Dead bug — 3×6/side","Calf raise — 3×15"];
+const MOB_A2 = ["Banded lateral walk — 3×12/side","Single-leg glute bridge — 3×10/side","Step-up with knee drive — 3×12/leg","Incline push-up — 3×10","Bird dog — 3×8/side","Single-leg calf raise — 3×12"];
+const MOB_A3 = ["Banded monster walk — 3×15/side","Bulgarian split squat (bodyweight) — 3×8/leg","Tempo step-up — 3×10/leg","Push-up — 3×12","Plank rotation — 3×8/side","Single-leg calf raise — 3×15"];
+// Active flexibility — hiking-joint prep, no equipment
+const MOB_B1 = ["Hip flexor stretch — 60 sec/side","Pigeon pose — 60 sec/side","Cat-cow — 2×10","Walking lunge — 2×10/leg","Child's pose to downward dog — 2×8"];
+const MOB_B2 = ["Deep squat hold — 60 sec","90/90 hip rotation — 2×10/side","Lateral lunge — 3×10/leg","Banded hip circles — 3×12/side","Thoracic rotation — 2×10/side"];
+const MOB_B3 = ["Single-leg balance hold — 60 sec/side","Deep lunge with reach — 3×8/side","Banded squat walk — 3×15","Hip airplane — 3×8/side","Thoracic windmill — 3×6/side"];
+
+const CARDIO_BADGES = [
+  "Laced Up","Two Weeks Steady","First Hike Finished","Smarter Not Harder",
+  "Engine Building","Hills Unlocked","Confidence Week","Halfway There",
+  "Strong Finish","Endurance Mode","Peak Week","Rainier Ready"
+];
+const CARDIO_WEEKS = [
+  // ── Phase 1 · Foundation ──────────────────────────────────────────────
+  WEEK(1,"Start easy and clean","140–165 min","Finish every session feeling like you could do a little more.", [
+    ["Zone 2 Walk","Zone 2 walk",30,"4/10",[],["Comfortable outdoor walk; full-sentence pace"],["2–5 min easy"]],
+    ["Mobility","Hiking mobility A",27,"3–4/10",["5 min easy walk"],MOB_A1,["Light stretch"]],
+    ["VO₂ Intervals","VO₂ intro intervals",30,"8/10",["10 min easy"],["5 rounds: 1 min hard + 2 min easy"],["5–10 min easy"]],
+    ["Recovery Walk","Recovery walk",25,"2–3/10",[],["20–30 min very easy"],["Light stretch"]],
+    ["Tempo/Incline","Incline or hill walk",25,"5–6/10",["5 min easy"],["15 min controlled incline or hills"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or easy hike",55,"4/10",[],["50–60 min easy; no pack"],["Feet and joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(1,"Repeat and settle in","155–180 min","Same sessions feel a little easier.", [
+    ["Zone 2 Walk","Zone 2 walk",35,"4–5/10",[],["35 min full-sentence pace"],["Easy finish"]],
+    ["Mobility","Hiking mobility A",27,"3–4/10",["5 min easy walk"],MOB_A1,["Light stretch"]],
+    ["VO₂ Intervals","VO₂ intervals",33,"8/10",["10 min easy"],["6 rounds: 1 min hard + 2 min easy"],["5–10 min easy"]],
+    ["Recovery Walk","Recovery walk",27,"2–3/10",[],["25–30 min very easy"],["Light stretch"]],
+    ["Tempo/Incline","Incline or hill walk",30,"5–6/10",["5 min easy"],["20 min controlled incline"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or easy hike",65,"4/10",[],["60–70 min easy"],["Feet and joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(1,"First real build","175–200 min","Breathing gets hard, but you stay in control.", [
+    ["Zone 2 Walk","Zone 2 walk",40,"4–5/10",[],["40 min controlled"],["Easy finish"]],
+    ["Mobility","Hiking mobility A — add reps",30,"3–4/10",["5 min easy walk"],MOB_A1,["Mobility"]],
+    ["VO₂ Intervals","VO₂ intervals",35,"8/10",["10 min easy"],["5 rounds: 90 sec hard + 2 min easy"],["5–10 min easy"]],
+    ["Recovery Walk","Recovery walk",30,"2–3/10",[],["25–35 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Tempo incline walk",30,"6–7/10",["10 min easy"],["15 min steady strong"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or easy hike",72,"4/10",[],["70–75 min easy"],["Feet and joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(1,"Deload and absorb","130–155 min","Finish fresher than you started.", [
+    ["Zone 2 Walk","Zone 2 walk",30,"4/10",[],["30 min easy"],["Easy finish"]],
+    ["Mobility","Active flexibility",22,"2–3/10",["5 min easy walk"],MOB_B1,["Light stretch"]],
+    ["VO₂ Intervals","Easy VO₂ practice",27,"7–8/10",["10 min easy"],["4 rounds: 1 min hard + 2 min easy"],["5–10 min easy"]],
+    ["Recovery Walk","Recovery walk",22,"2–3/10",[],["20–25 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Easy hills",22,"4–5/10",["5 min easy"],["12 min easy hills"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk",55,"4/10",[],["50–60 min easy"],["Finish fresh"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  // ── Phase 2 · Build ───────────────────────────────────────────────────
+  WEEK(2,"Step into real intervals","190–215 min","Finish 2-minute intervals without sprinting.", [
+    ["Zone 2 Walk","Zone 2 walk",42,"4–5/10",[],["40–45 min controlled"],["Easy finish"]],
+    ["Mobility","Hiking mobility B",30,"3–4/10",["5 min easy walk"],MOB_A2,["Light stretch"]],
+    ["VO₂ Intervals","VO₂ intervals",38,"8–9/10",["10–12 min easy"],["4 rounds: 2 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",30,"2–3/10",[],["25–35 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Tempo incline walk",30,"6–7/10",["10 min easy"],["15 min strong steady"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",80,"4/10",[],["75–85 min easy; optional light pack"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(2,"More time under control","215–240 min","Feel stronger on hills.", [
+    ["Zone 2 Walk","Zone 2 walk",45,"4–5/10",[],["45 min controlled"],["Easy finish"]],
+    ["Mobility","Hiking mobility B — add reps",30,"3–4/10",["5 min easy walk"],MOB_A2,["Light stretch"]],
+    ["VO₂ Intervals","VO₂ intervals",43,"8–9/10",["10–12 min easy"],["5 rounds: 2 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",30,"2–3/10",[],["30 min easy"],["Light stretch"]],
+    ["Hill Repeats","Hill repeats",35,"6–8/10",["10 min easy"],["6 rounds: 1 min uphill strong + 2 min easy"],["5–10 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",87,"4/10",[],["85–90 min easy; optional light pack"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(2,"Confidence week","230–255 min","Prove you can handle longer work.", [
+    ["Zone 2 Walk","Zone 2 walk",47,"4–5/10",[],["45–50 min controlled"],["Easy finish"]],
+    ["Mobility","Active flexibility B",28,"2–3/10",["5 min easy walk"],MOB_B2,["Light stretch"]],
+    ["VO₂ Intervals","VO₂ intervals",44,"8–9/10",["12 min easy"],["4 rounds: 3 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",32,"2–3/10",[],["30–35 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Tempo incline walk",35,"6–7/10",["10 min easy"],["20 min steady strong"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",95,"4/10",[],["90–100 min easy; light pack if joints feel good"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(2,"Deload and lock it in","165–195 min","Feel hungry for the next phase.", [
+    ["Zone 2 Walk","Zone 2 walk",37,"4/10",[],["35–40 min easy"],["Easy finish"]],
+    ["Mobility","Active flexibility B",22,"2–3/10",["5 min easy walk"],MOB_B2,["Light stretch"]],
+    ["VO₂ Intervals","Controlled intervals",38,"8/10",["10 min easy"],["4 rounds: 2 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",25,"2–3/10",[],["25 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Easy incline walk",25,"4–5/10",["5 min easy"],["15 min easy incline"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk",72,"4/10",[],["70–75 min easy"],["Finish fresh"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  // ── Phase 3 · Peak ────────────────────────────────────────────────────
+  WEEK(3,"Enter the 4-minute phase","240–270 min","Finish 4-minute intervals with control, not panic.", [
+    ["Zone 2 Walk","Zone 2 walk",50,"4–5/10",[],["50 min controlled"],["Easy finish"]],
+    ["Mobility","Hiking mobility C",30,"3–4/10",["5 min easy walk"],MOB_A3,["Light stretch"]],
+    ["VO₂ Intervals","4-minute VO₂ intervals",42,"8–9/10",["12 min easy"],["3 rounds: 4 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",32,"2–3/10",[],["30–35 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Tempo incline walk",35,"6–7/10",["10 min easy"],["20 min steady strong"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",105,"4/10",[],["100–110 min easy; 10 lb pack if ready"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(3,"Full endurance mode","265–295 min","Complete the hardest clean week of the block.", [
+    ["Zone 2 Walk","Zone 2 walk",52,"4–5/10",[],["50–55 min controlled"],["Easy finish"]],
+    ["Mobility","Hiking mobility C — full circuit",32,"3–4/10",["5 min easy walk"],MOB_A3,["Light stretch"]],
+    ["VO₂ Intervals","Full VO₂ session",50,"8–9/10",["12–15 min easy"],["4 rounds: 4 min hard + 3 min easy"],["8–10 min easy"]],
+    ["Recovery Walk","Recovery walk",35,"2–3/10",[],["30–40 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Hill or incline tempo",37,"6–7/10",["10 min easy"],["20–25 min strong controlled"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",115,"4/10",[],["110–120 min easy; 10–15 lb pack if ready"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(3,"Strongest week","275–310 min","Your best output without ego.", [
+    ["Zone 2 Walk","Zone 2 walk",57,"4–5/10",[],["55–60 min controlled"],["Easy finish"]],
+    ["Mobility","Active flexibility C",28,"2–3/10",["5 min easy walk"],MOB_B3,["Light stretch"]],
+    ["VO₂ Intervals","Peak VO₂ intervals",52,"8–9/10",["12–15 min easy"],["4 rounds: 4 min hard + 3 min easy"],["10 min easy"]],
+    ["Recovery Walk","Recovery walk",32,"2–3/10",[],["30–35 min easy"],["Light stretch"]],
+    ["Tempo/Incline","Tempo incline walk",40,"6–7/10",["10 min easy"],["25 min steady strong"],["5 min easy"]],
+    ["Long Walk/Hike/Ruck","Long walk or hike",120,"4/10",[],["120 min easy and controlled; 10–15 lb pack"],["Joint check"]],
+    ["Rest","Rest",0,"Rest",[],["Full rest"],[]]
+  ]),
+  WEEK(3,"Test and celebrate","165–210 min","Beat Week 1 in pace, endurance, or confidence.", [
+    ["Zone 2 Walk","Zone 2 walk",40,"4/10",[],["35–45 min easy"],["Easy finish"]],
+    ["Mobility","Full mobility flow",25,"2–3/10",["5 min easy walk"],MOB_B3,["Light stretch"]],
+    ["VO₂ Intervals","Final VO₂ session",43,"8–9/10",["12 min easy"],["3 rounds: 4 min hard + 3 min easy"],["10 min easy"]],
+    ["Recovery Walk","Recovery walk",27,"2–3/10",[],["25–30 min easy"],["Light stretch"]],
+    ["Recovery Walk","Easy walk",25,"2–3/10",[],["20–30 min easy"],["Finish fresh"]],
+    ["Benchmark","Benchmark day",30,"7–9/10",["10–12 min progressive"],["Choose: 30-min same-route walk; or 90-min confidence hike with pack"],["10 min easy; record distance, HR, effort, confidence"]],
+    ["Rest","Full rest",0,"Rest",[],["Celebrate. You built a real engine."],[]]
+  ])
+];
+
 const PROGRAMS = {
   "vo2-rebuild": {
     id: "vo2-rebuild",
@@ -131,13 +261,20 @@ const PROGRAMS = {
     shortName: "VO₂ Max Rebuild",
     weeks: VO2_WEEKS,
     badges: VO2_BADGES
+  },
+  "cardio-hiking": {
+    id: "cardio-hiking",
+    name: "12-Week Cardio + Hiking Focus",
+    shortName: "Cardio + Hiking",
+    weeks: CARDIO_WEEKS,
+    badges: CARDIO_BADGES
   }
 };
-const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "Ruck Builder", "Health + Longevity", "Conditioning", "Maintenance Mode"];
+const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Ruck Builder", "Health + Longevity", "Conditioning", "Maintenance Mode"];
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.3.3";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -208,6 +345,8 @@ const SESSION_CUES = {
   "Mobility":              "Never force a range. Work at the comfortable edge and breathe.",
   "Benchmark":             "Honest effort. This is data — not a competition with anyone.",
   "Rest":                  "Rest is training. Today's job is recovery. Do it well.",
+  "Hiking Mobility":       "Move through the full range. These exercises protect your knees and hips on the trail.",
+  "Active Flexibility":    "Never force a range. Work at the comfortable edge and breathe.",
 };
 
 function exerciseMedia(exercise) {
@@ -1456,7 +1595,7 @@ function renderCoach() {
 
 function renderProgramSelectors() {
   const options = [
-    `<option value="vo2-rebuild">12-Week VO₂ Max Rebuild</option>`,
+    ...Object.values(PROGRAMS).map(p => `<option value="${p.id}">${p.name}</option>`),
     ...FUTURE_PROGRAMS.map(name => `<option disabled>${name} · coming later</option>`)
   ].join("");
   ["#programSelector", "#settingsProgramSelector"].forEach(selector => {
@@ -2426,14 +2565,14 @@ document.querySelector("#sessionForm")?.elements.date?.addEventListener("change"
   if (form?.dataset.mode === "planned") fillSessionForm(plannedSessionDraft(event.target.value), "planned");
 });
 document.querySelector("#sessionType")?.addEventListener("change", event => {
-  const form = document.querySelector("#sessionForm");
-  if (form?.dataset.mode === "planned") {
-    const date = form.elements.date.value || dateKey(activeDate());
-    fillSessionForm(plannedSessionDraft(date), "planned");
-    return;
-  }
+  // Update dynamic fields only — never reset the form when the user picks a different type
   document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(event.target.value);
-  setLogModeCopy("manual");
+  const form = document.querySelector("#sessionForm");
+  const ctxBar = document.querySelector("#logContextBar");
+  if (ctxBar && form) {
+    const isManual = form.dataset.mode === "manual";
+    ctxBar.innerHTML = `${sessionIcon(event.target.value, "")}<div><span>Week ${currentWeek()} · ${isManual ? "Extra session" : "Planned session"}</span><strong>${event.target.value}</strong></div>`;
+  }
 });
 document.querySelector("#sessionForm")?.addEventListener("submit", event => {
   event.preventDefault();
