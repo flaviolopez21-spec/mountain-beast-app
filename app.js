@@ -1618,22 +1618,64 @@ function showOnboarding() {
   document.querySelector("#onboarding").hidden = false;
 }
 let updateMiniWorkout = () => {};
+/* ── Liquid-glass nav indicator ─────────────────────────────────────────────
+   Two pills (lead + trail) travel between tabs with different easing, so the
+   selection stretches mid-flight and re-fuses on arrival. The frosted bubble
+   spans their bounding box; the SVG-goo blob layer renders the mercury merge. */
+let navCur = null;            // {l, w} of the bounding box currently painted
+let navAnimId = null;
+const navEaseOut = t => 1 - Math.pow(1 - t, 3);
+const navEaseIn  = t => t * t * t;
+function writeNavFrame(nav, f) {
+  nav.style.setProperty("--active-x", `${f.left}px`);
+  nav.style.setProperty("--active-w", `${f.width}px`);
+  nav.style.setProperty("--active-sy", f.sy);
+  nav.style.setProperty("--goo-l-x", `${f.leadL}px`);
+  nav.style.setProperty("--goo-l-w", `${f.leadW}px`);
+  nav.style.setProperty("--goo-t-x", `${f.trailL}px`);
+  nav.style.setProperty("--goo-t-w", `${f.trailW}px`);
+  nav.style.setProperty("--goo-t-o", f.trailO);
+  navCur = { l: f.left, w: f.width };
+}
+function computeNavFrame(fromL, fromW, toL, toW, t) {
+  const eo = navEaseOut(t), ei = navEaseIn(t);
+  const leadL = fromL + (toL - fromL) * eo, leadW = fromW + (toW - fromW) * eo;
+  const trailL = fromL + (toL - fromL) * ei, trailW = fromW + (toW - fromW) * ei;
+  const left = Math.min(leadL, trailL);
+  const width = Math.max(leadL + leadW, trailL + trailW) - left;
+  const avgW = (fromW + toW) / 2 || width;
+  const stretch = avgW ? Math.max(0, (width - avgW) / avgW) : 0;
+  const sy = 1 - Math.min(0.14, stretch * 0.4);            // volume-preserving squish
+  const trailO = Math.min(1, Math.sin(Math.PI * t) * 1.3); // satellite blob only mid-travel
+  return { left, width, sy, leadL, leadW, trailL, trailW, trailO };
+}
+function snapNav(nav, link) {
+  const l = link.offsetLeft, w = link.offsetWidth;
+  writeNavFrame(nav, { left: l, width: w, sy: 1, leadL: l, leadW: w, trailL: l, trailW: w, trailO: 0 });
+}
 function updateNavActiveIndicator(target, animate = false) {
   const nav = document.querySelector("#bottomNav");
   const selector = target ? `.bottom-nav a[data-target="${target}"]` : ".bottom-nav a.active";
   const activeLink = document.querySelector(selector);
   if (!nav || !activeLink) return;
-  requestAnimationFrame(() => {
-    nav.style.setProperty("--active-x", `${activeLink.offsetLeft}px`);
-    nav.style.setProperty("--active-w", `${activeLink.offsetWidth}px`);
-    if (animate) {
-      const indicator = nav.querySelector(".nav-active-indicator");
-      if (indicator) {
-        indicator.classList.remove("landing");
-        requestAnimationFrame(() => indicator.classList.add("landing"));
-      }
-    }
-  });
+  cancelAnimationFrame(navAnimId);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const toL = activeLink.offsetLeft, toW = activeLink.offsetWidth;
+  if (!animate || reduced || !navCur ||
+      (Math.abs(navCur.l - toL) < 0.5 && Math.abs(navCur.w - toW) < 0.5)) {
+    snapNav(nav, activeLink);
+    nav.classList.remove("nav-gooing");
+    return;
+  }
+  const fromL = navCur.l, fromW = navCur.w, start = performance.now(), dur = 540;
+  nav.classList.add("nav-gooing");           // enable the SVG goo filter only while traveling
+  const step = now => {
+    const t = Math.min(1, (now - start) / dur);
+    writeNavFrame(nav, computeNavFrame(fromL, fromW, toL, toW, t));
+    if (t < 1) navAnimId = requestAnimationFrame(step);
+    else { snapNav(nav, activeLink); nav.classList.remove("nav-gooing"); }
+  };
+  navAnimId = requestAnimationFrame(step);
 }
 const NAV_TABS = ["today", "plan", "log", "progress", "coach"];
 function navigate(target) {
@@ -2081,17 +2123,14 @@ function setupNavSlider() {
     return nearest;
   }
 
-  function snapIndicatorToLink(link) {
-    nav.style.setProperty("--active-x", `${link.offsetLeft}px`);
-    nav.style.setProperty("--active-w", `${link.offsetWidth}px`);
-  }
-
   let startX = null;
   let isDragging = false;
+  let dragIdx = -1;
 
   nav.addEventListener("touchstart", e => {
     startX = e.touches[0].clientX;
     isDragging = false;
+    dragIdx = nearestIndex(startX);
   }, { passive: true });
 
   nav.addEventListener("touchmove", e => {
@@ -2100,9 +2139,10 @@ function setupNavSlider() {
     isDragging = true;
     nav.classList.add("nav-dragging");
     const idx = nearestIndex(e.touches[0].clientX);
-    const ls = links();
-    snapIndicatorToLink(ls[idx]);
-    ls.forEach((l, i) => l.classList.toggle("active", i === idx));
+    if (idx === dragIdx) return;          // only re-fuse when crossing into a new tab
+    dragIdx = idx;
+    links().forEach((l, i) => l.classList.toggle("active", i === idx));
+    updateNavActiveIndicator(TABS[idx], true);  // stretch + goo merge toward new tab
   }, { passive: true });
 
   nav.addEventListener("touchend", e => {
@@ -2230,8 +2270,8 @@ function setupMainSwipe() {
     return active ? NAV_TABS.indexOf(active.dataset.view) : 0;
   }
   function lerpIndicator(fromLink, toLink, t) {
-    nav.style.setProperty("--active-x", `${fromLink.offsetLeft + (toLink.offsetLeft - fromLink.offsetLeft) * t}px`);
-    nav.style.setProperty("--active-w", `${fromLink.offsetWidth + (toLink.offsetWidth - fromLink.offsetWidth) * t}px`);
+    cancelAnimationFrame(navAnimId);
+    writeNavFrame(nav, computeNavFrame(fromLink.offsetLeft, fromLink.offsetWidth, toLink.offsetLeft, toLink.offsetWidth, t));
   }
 
   let startX = null, startY = null, tracking = false;

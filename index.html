@@ -279,13 +279,23 @@
       <span id="miniWorkoutText">Today’s workout</span><strong>Return ↑</strong>
     </button>
 
+    <svg class="nav-goo-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="navGoo" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo" />
+          <feBlend in="SourceGraphic" in2="goo" />
+        </filter>
+      </defs>
+    </svg>
     <nav class="bottom-nav" id="bottomNav" aria-label="Primary navigation">
+      <div class="nav-goo-layer" aria-hidden="true"><i class="nav-goo-blob goo-trail"></i><i class="nav-goo-blob goo-lead"></i></div>
       <div class="nav-active-indicator" aria-hidden="true"></div>
-      <a class="active" href="#today" data-target="today"><span class="nav-icon">●</span><span class="nav-label">Today</span></a>
-      <a href="#plan" data-target="plan"><span class="nav-icon">▦</span><span class="nav-label">Plan</span></a>
-      <a href="#log" data-target="log"><span class="nav-icon">＋</span><span class="nav-label">Log</span></a>
-      <a href="#progress" data-target="progress"><span class="nav-icon">↗</span><span class="nav-label">Progress</span></a>
-      <a href="#coach" data-target="coach"><span class="nav-icon">?</span><span class="nav-label">Coach</span></a>
+      <a class="active" href="#today" data-target="today"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9.5h14V10"/></svg></span><span class="nav-label">Today</span></a>
+      <a href="#plan" data-target="plan"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span><span class="nav-label">Plan</span></a>
+      <a href="#log" data-target="log"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg></span><span class="nav-label">Log</span></a>
+      <a href="#progress" data-target="progress"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M7.5 15.5 11 11l3 2.5 4.5-6.5"/></svg></span><span class="nav-label">Progress</span></a>
+      <a href="#coach" data-target="coach"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v10H9.5L5.5 20v-4.5H4z"/><path d="M9 10h6M9 13h3.5"/></svg></span><span class="nav-label">Coach</span></a>
     </nav>
 
     <dialog id="settingsDialog">
