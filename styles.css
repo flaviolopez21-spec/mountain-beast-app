@@ -619,21 +619,15 @@ textarea { resize: vertical; }
 .nav-active-indicator {
   position: absolute; z-index: 1; top: 5px; bottom: 5px; left: 0;
   width: var(--active-w); border-radius: 17px;
-  /* frosted milky liquid glass core */
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.16) 60%, rgba(255,255,255,.26)),
-    rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.45);
-  /* depth: outer drop shadow + inner rim highlights */
+  /* subtle neutral frosted pill (Instagram-style) */
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.10);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.85),
-    inset 0 -1px 0 rgba(255,255,255,.22),
-    inset 1px 0 0 rgba(255,255,255,.28),
-    inset -1px 0 0 rgba(255,255,255,.28),
-    0 10px 32px rgba(0,0,0,.30),
-    0 2px 8px rgba(0,0,0,.20);
-  backdrop-filter: blur(34px) saturate(180%) brightness(1.16);
-  -webkit-backdrop-filter: blur(34px) saturate(180%) brightness(1.16);
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 4px 14px rgba(0,0,0,.22);
+  backdrop-filter: blur(22px) saturate(135%) brightness(1.08);
+  -webkit-backdrop-filter: blur(22px) saturate(135%) brightness(1.08);
   /* rAF-driven in JS — keep only secondary props transitioned */
   transform: translateX(var(--active-x)) scaleY(var(--active-sy, 1));
   transform-origin: center center;
@@ -642,26 +636,17 @@ textarea { resize: vertical; }
   overflow: hidden;
   will-change: transform, width;
 }
-/* top gloss — curved specular reflection */
+/* faint top highlight only — keep it understated */
 .nav-active-indicator::before {
   content: '';
   position: absolute;
-  top: 0; left: 8%; right: 8%;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.05) 100%);
+  top: 0; left: 12%; right: 12%;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 100%);
   border-radius: 0 0 60% 60%;
   pointer-events: none;
 }
-/* bottom edge gleam */
-.nav-active-indicator::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 18%; right: 18%;
-  height: 30%;
-  background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.34) 0%, transparent 80%);
-  pointer-events: none;
-}
-/* ── SVG goo merge layer — mercury blobs that pinch + re-fuse during travel ── */
+/* ── SVG goo merge layer — neutral blobs that pinch + re-fuse during travel ── */
 .nav-goo-layer {
   position: absolute; z-index: 0; inset: 0; pointer-events: none;
   /* goo filter is expensive; JS adds .gooing only while the bubble travels */
@@ -670,7 +655,7 @@ textarea { resize: vertical; }
 .bottom-nav.nav-dragging .nav-goo-layer { filter: url(#navGoo); }
 .nav-goo-blob {
   position: absolute; top: 5px; bottom: 5px; border-radius: 99px;
-  background: rgba(207,226,141,.85);
+  background: rgba(255,255,255,.15);
 }
 .nav-goo-blob.goo-lead {
   width: var(--goo-l-w, var(--active-w));
@@ -683,15 +668,15 @@ textarea { resize: vertical; }
 }
 /* Drag tracks finger in real-time (rAF/JS already instant; nothing to disable) */
 .bottom-nav.nav-dragging a { transition: color .08s ease; }
-.bottom-nav a { position: relative; z-index: 2; min-width: 0; display: grid; place-items: center; gap: 3px; padding: 8px 2px; border-radius: 15px; color: rgba(185,197,193,.7); text-decoration: none; font-size: 9px; font-weight: 700; transition: padding .28s ease, border-radius .28s ease, color .2s ease; pointer-events: auto; }
-.bottom-nav .nav-icon { display: grid; place-items: center; width: 23px; height: 23px; transition: transform 320ms cubic-bezier(.34,1.56,.64,1); }
+.bottom-nav a { position: relative; z-index: 2; min-width: 0; display: grid; place-items: center; gap: 3px; padding: 8px 2px; border-radius: 15px; color: rgba(255,255,255,.62); text-decoration: none; font-size: 9px; font-weight: 700; transition: padding .28s ease, border-radius .28s ease, color .2s ease; pointer-events: auto; }
+.bottom-nav .nav-icon { display: grid; place-items: center; width: 23px; height: 23px; transition: transform 320ms cubic-bezier(.4,1.3,.6,1); }
 .bottom-nav .nav-icon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; display: block; }
-.bottom-nav a.active .nav-icon svg { stroke-width: 2.1; }
+.bottom-nav a.active .nav-icon svg { stroke-width: 2.2; }
 .bottom-nav .nav-label { max-height: 14px; opacity: 1; overflow: hidden; line-height: 1.2; transition: opacity .16s ease, max-height .28s ease, transform .28s ease; }
-.bottom-nav a.active { color: var(--pine); }
-.bottom-nav a.active .nav-icon { transform: scale(1.12); }
+.bottom-nav a.active { color: #fff; }
+.bottom-nav a.active .nav-icon { transform: scale(1.06); }
 /* press feedback — quick squish the instant a tab is touched */
-.bottom-nav a:active .nav-icon { transform: scale(.8); transition: transform .09s ease; }
+.bottom-nav a:active .nav-icon { transform: scale(.86); transition: transform .09s ease; }
 .bottom-nav.compact { padding: 5px; border-radius: 22px; box-shadow: 0 14px 34px rgba(10,28,24,.26), var(--glass-highlight-dark); }
 .bottom-nav.compact .nav-active-indicator { top: 5px; bottom: 5px; border-radius: 13px; }
 .bottom-nav.compact a { padding: 9px 2px; border-radius: 999px; }

@@ -1626,6 +1626,8 @@ let navCur = null;            // {l, w} of the bounding box currently painted
 let navAnimId = null;
 const navEaseOut = t => 1 - Math.pow(1 - t, 3);
 const navEaseIn  = t => t * t * t;
+const navEaseInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const NAV_STRETCH = 0.32;   // 0 = rigid glide, 1 = extreme jelly; Instagram is gentle
 function writeNavFrame(nav, f) {
   nav.style.setProperty("--active-x", `${f.left}px`);
   nav.style.setProperty("--active-w", `${f.width}px`);
@@ -1638,15 +1640,19 @@ function writeNavFrame(nav, f) {
   navCur = { l: f.left, w: f.width };
 }
 function computeNavFrame(fromL, fromW, toL, toW, t) {
-  const eo = navEaseOut(t), ei = navEaseIn(t);
-  const leadL = fromL + (toL - fromL) * eo, leadW = fromW + (toW - fromW) * eo;
-  const trailL = fromL + (toL - fromL) * ei, trailW = fromW + (toW - fromW) * ei;
+  // Lead/trail progress diverge only slightly from a common ease, so the pill
+  // glides with a gentle stretch instead of an extreme jelly.
+  const base = navEaseInOut(t);
+  const lead = base + (navEaseOut(t) - base) * NAV_STRETCH;
+  const trail = base + (navEaseIn(t) - base) * NAV_STRETCH;
+  const leadL = fromL + (toL - fromL) * lead, leadW = fromW + (toW - fromW) * lead;
+  const trailL = fromL + (toL - fromL) * trail, trailW = fromW + (toW - fromW) * trail;
   const left = Math.min(leadL, trailL);
   const width = Math.max(leadL + leadW, trailL + trailW) - left;
   const avgW = (fromW + toW) / 2 || width;
   const stretch = avgW ? Math.max(0, (width - avgW) / avgW) : 0;
-  const sy = 1 - Math.min(0.14, stretch * 0.4);            // volume-preserving squish
-  const trailO = Math.min(1, Math.sin(Math.PI * t) * 1.3); // satellite blob only mid-travel
+  const sy = 1 - Math.min(0.07, stretch * 0.3);            // subtle volume-preserving squish
+  const trailO = Math.min(1, Math.sin(Math.PI * t));       // satellite blob only mid-travel
   return { left, width, sy, leadL, leadW, trailL, trailW, trailO };
 }
 function snapNav(nav, link) {
@@ -1667,7 +1673,7 @@ function updateNavActiveIndicator(target, animate = false) {
     nav.classList.remove("nav-gooing");
     return;
   }
-  const fromL = navCur.l, fromW = navCur.w, start = performance.now(), dur = 540;
+  const fromL = navCur.l, fromW = navCur.w, start = performance.now(), dur = 380;
   nav.classList.add("nav-gooing");           // enable the SVG goo filter only while traveling
   const step = now => {
     const t = Math.min(1, (now - start) / dur);
