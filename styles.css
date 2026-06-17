@@ -447,9 +447,9 @@ textarea { resize: vertical; }
 .week-days { border-top: 1px solid var(--line); }
 .plan-day { border-bottom: 1px solid var(--line); }
 .plan-day:last-child { border-bottom: 0; }
-.plan-day > summary { display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; align-items: center; padding: 13px 20px; cursor: pointer; list-style: none; }
+.plan-day > summary { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: center; padding: 13px 20px; cursor: pointer; list-style: none; }
 .plan-day > summary::-webkit-details-marker { display: none; }
-.plan-day time { color: var(--muted); font-size: 11px; }
+.plan-day time { color: var(--muted); font-size: 11px; white-space: nowrap; }
 .plan-day strong { font-size: 13px; }
 .plan-day > summary > span:last-child { color: var(--muted); font-size: 16px; }
 .plan-day[open] > summary > span:last-child { transform: rotate(90deg); }

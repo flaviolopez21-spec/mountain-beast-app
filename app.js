@@ -274,7 +274,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Ruck Builder", "Health 
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "1.3.4";
+const APP_VERSION = "1.3.6";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -1343,8 +1343,8 @@ function plannedSessionDraft(date = dateKey(activeDate())) {
     dayNumber: rawInfo.dayNumber,
     source: "planned",
     status: planned.status || "planned",
-    type: rawInfo.plan.type,
-    sessionType: rawInfo.plan.type,
+    type: planned.sessionType || planned.type || rawInfo.plan.type,
+    sessionType: planned.sessionType || planned.type || rawInfo.plan.type,
     plannedType: rawInfo.plan.type,
     minutes: planned.minutes || plan.minutes,
     duration: planned.duration || planned.minutes || plan.minutes,
