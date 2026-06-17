@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.9.7" />
-    <link rel="stylesheet" href="./styles.css?v=0.9.7" />
+    <link rel="manifest" href="./manifest.webmanifest?v=0.9.9" />
+    <link rel="stylesheet" href="./styles.css?v=0.9.9" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -91,6 +91,11 @@
           <details><summary>Why?</summary><p id="nextBestMoveWhy"></p></details>
         </article>
 
+        <article class="readiness-card">
+          <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
+          <div><p class="eyebrow">Training Readiness</p><h2 id="beastTitle">Foundation Builder</h2><p id="readinessMessage"></p></div>
+        </article>
+
         <article class="card workout-card" id="todayWorkoutCard">
           <div class="card-heading">
             <div><p class="eyebrow" id="todayPurpose"></p><h2 id="todayWorkout"></h2></div>
@@ -99,10 +104,13 @@
           <div class="adaptation-banner" id="adaptationBanner"></div>
           <div id="workoutContent"></div>
           <div class="timer-tools" id="timerTools">
-            <button data-timer-kind="warmup">Warm-up timer</button>
-            <button data-timer-kind="main">Workout timer</button>
-            <button data-timer-kind="cooldown">Cool-down timer</button>
-            <button data-timer-kind="interval" id="intervalTimerButton">Interval timer</button>
+            <div class="timer-kind-group" role="group" aria-label="Timer type">
+              <button class="timer-kind-btn active" data-timer-kind="warmup">Warm-up</button>
+              <button class="timer-kind-btn" data-timer-kind="main">Main</button>
+              <button class="timer-kind-btn" data-timer-kind="cooldown">Cool-down</button>
+              <button class="timer-kind-btn" data-timer-kind="interval" id="intervalTimerButton">Intervals</button>
+            </div>
+            <button class="timer-start-btn" id="timerStartBtn">▶ Start timer</button>
           </div>
           <div class="timer-panel" id="timerPanel" role="timer" aria-live="polite" hidden>
             <div>
@@ -122,9 +130,14 @@
           <label class="field"><span>Session notes</span><textarea id="workoutNotes" rows="3" placeholder="Breathing, pace, confidence, wins..."></textarea></label>
           <div class="today-actions">
             <button class="primary-button" id="completeTodayButton">Complete Session</button>
-            <button class="secondary-button" id="minimumTodayButton">Do 20-minute minimum</button>
-            <button class="secondary-button" id="reduceTodayButton">I need to reduce it</button>
-            <button class="secondary-button" id="skipTodayButton">I need to skip today</button>
+            <details class="today-options" id="todayOptions">
+              <summary>⋯ Options</summary>
+              <div class="today-options-list">
+                <button class="secondary-button" id="minimumTodayButton">Do 20-minute minimum</button>
+                <button class="secondary-button" id="reduceTodayButton">I need to reduce it</button>
+                <button class="secondary-button" id="skipTodayButton">I need to skip today</button>
+              </div>
+            </details>
           </div>
           <div class="saved-line"><span id="todayCompletionStatus"></span><span id="lastSavedToday">Not saved yet</span></div>
           <button class="text-button" id="logTodayButton">Open detailed log</button>
@@ -136,11 +149,6 @@
             <span class="status-pill done">Complete ✓</span>
           </div>
           <div class="recap-grid" id="completionRecapContent"></div>
-        </article>
-
-        <article class="readiness-card">
-          <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
-          <div><p class="eyebrow">Training Readiness</p><h2 id="beastTitle">Foundation Builder</h2><p id="readinessMessage"></p></div>
         </article>
 
         <div class="metric-grid">
@@ -173,6 +181,7 @@
           <h1>Log training</h1>
           <p>Fields adapt to the kind of work you completed.</p>
         </div>
+        <div class="log-context-bar" id="logContextBar" hidden></div>
         <form class="card form-card" id="sessionForm">
           <div class="session-edit-bar">
             <span class="status-pill" id="sessionEditStatus">Editing today’s planned session</span>
@@ -321,6 +330,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.9.7"></script>
+    <script src="./app.js?v=0.9.9"></script>
   </body>
 </html>

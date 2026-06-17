@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.7";
+const APP_VERSION = "0.9.9";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -181,28 +181,23 @@ function sessionIcon(type, className = "") {
 }
 
 const EXERCISES = [
-  { name: "Goblet Squat", aliases: ["goblet squat"], iconKey: "squat", cue: "Keep the weight close and control the bottom.", equipment: "Dumbbell or kettlebell", setup: "Hold the weight close to your chest with feet about shoulder-width.", steps: ["Brace before you descend.", "Sit between your hips while knees track over toes.", "Drive through the whole foot and stand tall."], mistakes: "Heels lifting, knees collapsing inward, or the weight drifting away.", substitutions: "Leg press, bodyweight box squat" },
-  { name: "Leg Press", aliases: ["leg press"], iconKey: "machine", cue: "Use controlled depth and whole-foot pressure.", equipment: "Leg press machine", setup: "Place feet flat on the platform, about hip to shoulder-width.", steps: ["Lower under control.", "Stop before your hips tuck or low back rounds.", "Press through the whole foot."], mistakes: "Locking knees hard, letting hips lift, or going too deep.", substitutions: "Goblet squat, box squat" },
-  { name: "Romanian Deadlift", aliases: ["romanian deadlift", "rdl"], iconKey: "hinge", cue: "Push the hips back and keep the weight close.", equipment: "Dumbbells, barbell, or Smith machine", setup: "Stand tall with soft knees and the weight close to your thighs.", steps: ["Brace and send the hips backward.", "Lower until the hamstrings feel loaded while the spine stays long.", "Drive the hips forward to stand."], mistakes: "Squatting the movement, rounding the back, or reaching weights away.", substitutions: "Hamstring curl, cable pull-through" },
-  { name: "Hamstring Curl", aliases: ["hamstring curl"], iconKey: "machine", cue: "Move smoothly without lifting the hips.", equipment: "Hamstring curl machine", setup: "Line the machine pivot near your knee joint and secure yourself.", steps: ["Curl smoothly.", "Pause briefly at the squeeze.", "Lower with control."], mistakes: "Using momentum, lifting the hips, or rushing the lowering phase.", substitutions: "Romanian deadlift, stability-ball curl" },
-  { name: "Step-up", aliases: ["step-up", "step up"], iconKey: "step", cue: "Use the front leg, not a bounce from the back foot.", equipment: "Box, bench, or step", setup: "Place your whole foot on a stable step.", steps: ["Drive through the working leg.", "Stand tall at the top.", "Step down with control."], mistakes: "Pushing off the back foot, letting the knee collapse, or using a box that is too high.", substitutions: "Split squat, leg press" },
-  { name: "Split Squat", aliases: ["split squat"], iconKey: "singleLeg", cue: "Control the descent and stay balanced.", equipment: "Bodyweight or dumbbells", setup: "Use a stable staggered stance.", steps: ["Lower straight down.", "Keep the front foot planted.", "Drive through the front leg."], mistakes: "Front heel lifting, wobbling, or turning it into a jumping lunge.", substitutions: "Step-up, leg press" },
-  { name: "Push-up", aliases: ["push-up", "push up", "push-ups", "push ups"], iconKey: "push", cue: "Keep ribs down and move as one piece.", equipment: "Bodyweight", setup: "Place hands under the shoulders with the body in a straight line.", steps: ["Brace the body like a plank.", "Lower the chest toward the floor.", "Press away while staying rigid."], mistakes: "Hips sagging, elbows flaring hard, or using half reps.", substitutions: "Incline push-up, dumbbell bench press" },
-  { name: "Dumbbell Bench Press", aliases: ["dumbbell bench press", "db bench press", "db bench"], iconKey: "dumbbell", cue: "Control the bottom and keep the shoulders packed.", equipment: "Dumbbells and bench", setup: "Lie on the bench with feet planted and dumbbells controlled.", steps: ["Lower the dumbbells under control.", "Keep the wrists stacked.", "Press up without crashing the weights together."], mistakes: "Bouncing reps, flaring elbows, or losing wrist position.", substitutions: "Push-up, machine chest press" },
-  { name: "Cable Row", aliases: ["cable row", "seated cable row"], iconKey: "pull", cue: "Pull with the back, not just the arms.", equipment: "Cable row machine", setup: "Sit tall with a neutral spine and arms extended.", steps: ["Pull the elbows back.", "Squeeze the shoulder blades lightly.", "Return under control."], mistakes: "Leaning back too much, shrugging, or jerking the weight.", substitutions: "Dumbbell row, machine row" },
-  { name: "Lat Pulldown", aliases: ["lat pulldown"], iconKey: "pull", cue: "Drive the elbows down.", equipment: "Lat pulldown machine", setup: "Sit tall, grip the bar, and secure the thighs.", steps: ["Pull the bar toward the upper chest.", "Keep the ribs controlled.", "Return slowly."], mistakes: "Pulling behind the neck, swinging the body, or shrugging.", substitutions: "Assisted pull-up, cable row" },
-  { name: "Dumbbell Shoulder Press", aliases: ["dumbbell shoulder press", "db shoulder press"], iconKey: "dumbbell", cue: "Press up without arching hard.", equipment: "Dumbbells", setup: "Sit or stand tall with dumbbells at shoulder height.", steps: ["Brace with the ribs down.", "Press overhead.", "Lower under control."], mistakes: "Overarching the back, flaring the ribs, or bouncing reps.", substitutions: "Machine shoulder press, landmine press" },
-  { name: "Plank", aliases: ["plank"], iconKey: "core", cue: "Hold a straight line from shoulders to ankles.", equipment: "Bodyweight", setup: "Place elbows under the shoulders with the body straight.", steps: ["Brace the abs.", "Squeeze the glutes lightly.", "Breathe behind the brace."], mistakes: "Hips sagging, hips too high, or holding the breath.", substitutions: "Incline plank, dead bug" },
-  { name: "Dead Bug", aliases: ["dead bug"], iconKey: "core", cue: "Move slowly while the ribs stay down.", equipment: "Bodyweight", setup: "Lie on your back with arms up and knees bent.", steps: ["Press the low back gently toward the floor.", "Extend the opposite arm and leg.", "Return slowly and switch."], mistakes: "The back arching, rushing, or losing control.", substitutions: "Plank, heel taps" }
-].map(exercise => ({ illustrationKey: null, imagePath: null, ...exercise }));
+  { name: "Goblet Squat", aliases: ["goblet squat"], iconKey: "squat", category: "Lower · Squat", cue: "Keep the weight close and control the bottom.", equipment: "Dumbbell or kettlebell", setup: "Hold the weight close to your chest with feet about shoulder-width.", steps: ["Brace before you descend.", "Sit between your hips while knees track over toes.", "Drive through the whole foot and stand tall."], mistakes: "Heels lifting, knees collapsing inward, or the weight drifting away.", substitutions: "Leg press, bodyweight box squat" },
+  { name: "Leg Press", aliases: ["leg press"], iconKey: "machine", category: "Lower · Machine", cue: "Use controlled depth and whole-foot pressure.", equipment: "Leg press machine", setup: "Place feet flat on the platform, about hip to shoulder-width.", steps: ["Lower under control.", "Stop before your hips tuck or low back rounds.", "Press through the whole foot."], mistakes: "Locking knees hard, letting hips lift, or going too deep.", substitutions: "Goblet squat, box squat" },
+  { name: "Romanian Deadlift", aliases: ["romanian deadlift", "rdl"], iconKey: "hinge", category: "Lower · Hinge", cue: "Push the hips back and keep the weight close.", equipment: "Dumbbells, barbell, or Smith machine", setup: "Stand tall with soft knees and the weight close to your thighs.", steps: ["Brace and send the hips backward.", "Lower until the hamstrings feel loaded while the spine stays long.", "Drive the hips forward to stand."], mistakes: "Squatting the movement, rounding the back, or reaching weights away.", substitutions: "Hamstring curl, cable pull-through" },
+  { name: "Hamstring Curl", aliases: ["hamstring curl"], iconKey: "machine", category: "Lower · Machine", cue: "Move smoothly without lifting the hips.", equipment: "Hamstring curl machine", setup: "Line the machine pivot near your knee joint and secure yourself.", steps: ["Curl smoothly.", "Pause briefly at the squeeze.", "Lower with control."], mistakes: "Using momentum, lifting the hips, or rushing the lowering phase.", substitutions: "Romanian deadlift, stability-ball curl" },
+  { name: "Step-up", aliases: ["step-up", "step up"], iconKey: "step", category: "Lower · Single-leg", cue: "Use the front leg, not a bounce from the back foot.", equipment: "Box, bench, or step", setup: "Place your whole foot on a stable step.", steps: ["Drive through the working leg.", "Stand tall at the top.", "Step down with control."], mistakes: "Pushing off the back foot, letting the knee collapse, or using a box that is too high.", substitutions: "Split squat, leg press" },
+  { name: "Split Squat", aliases: ["split squat"], iconKey: "singleLeg", category: "Lower · Single-leg", cue: "Control the descent and stay balanced.", equipment: "Bodyweight or dumbbells", setup: "Use a stable staggered stance.", steps: ["Lower straight down.", "Keep the front foot planted.", "Drive through the front leg."], mistakes: "Front heel lifting, wobbling, or turning it into a jumping lunge.", substitutions: "Step-up, leg press" },
+  { name: "Push-up", aliases: ["push-up", "push up", "push-ups", "push ups"], iconKey: "push", category: "Upper · Push", cue: "Keep ribs down and move as one piece.", equipment: "Bodyweight", setup: "Place hands under the shoulders with the body in a straight line.", steps: ["Brace the body like a plank.", "Lower the chest toward the floor.", "Press away while staying rigid."], mistakes: "Hips sagging, elbows flaring hard, or using half reps.", substitutions: "Incline push-up, dumbbell bench press" },
+  { name: "Dumbbell Bench Press", aliases: ["dumbbell bench press", "db bench press", "db bench"], iconKey: "dumbbell", category: "Upper · Push", cue: "Control the bottom and keep the shoulders packed.", equipment: "Dumbbells and bench", setup: "Lie on the bench with feet planted and dumbbells controlled.", steps: ["Lower the dumbbells under control.", "Keep the wrists stacked.", "Press up without crashing the weights together."], mistakes: "Bouncing reps, flaring elbows, or losing wrist position.", substitutions: "Push-up, machine chest press" },
+  { name: "Cable Row", aliases: ["cable row", "seated cable row"], iconKey: "pull", category: "Upper · Pull", cue: "Pull with the back, not just the arms.", equipment: "Cable row machine", setup: "Sit tall with a neutral spine and arms extended.", steps: ["Pull the elbows back.", "Squeeze the shoulder blades lightly.", "Return under control."], mistakes: "Leaning back too much, shrugging, or jerking the weight.", substitutions: "Dumbbell row, machine row" },
+  { name: "Lat Pulldown", aliases: ["lat pulldown"], iconKey: "pull", category: "Upper · Pull", cue: "Drive the elbows down.", equipment: "Lat pulldown machine", setup: "Sit tall, grip the bar, and secure the thighs.", steps: ["Pull the bar toward the upper chest.", "Keep the ribs controlled.", "Return slowly."], mistakes: "Pulling behind the neck, swinging the body, or shrugging.", substitutions: "Assisted pull-up, cable row" },
+  { name: "Dumbbell Shoulder Press", aliases: ["dumbbell shoulder press", "db shoulder press"], iconKey: "dumbbell", category: "Upper · Press", cue: "Press up without arching hard.", equipment: "Dumbbells", setup: "Sit or stand tall with dumbbells at shoulder height.", steps: ["Brace with the ribs down.", "Press overhead.", "Lower under control."], mistakes: "Overarching the back, flaring the ribs, or bouncing reps.", substitutions: "Machine shoulder press, landmine press" },
+  { name: "Plank", aliases: ["plank"], iconKey: "core", category: "Core · Brace", cue: "Hold a straight line from shoulders to ankles.", equipment: "Bodyweight", setup: "Place elbows under the shoulders with the body straight.", steps: ["Brace the abs.", "Squeeze the glutes lightly.", "Breathe behind the brace."], mistakes: "Hips sagging, hips too high, or holding the breath.", substitutions: "Incline plank, dead bug" },
+  { name: "Dead Bug", aliases: ["dead bug"], iconKey: "core", category: "Core · Brace", cue: "Move slowly while the ribs stay down.", equipment: "Bodyweight", setup: "Lie on your back with arms up and knees bent.", steps: ["Press the low back gently toward the floor.", "Extend the opposite arm and leg.", "Return slowly and switch."], mistakes: "The back arching, rushing, or losing control.", substitutions: "Plank, heel taps" }
+];
 
-function exerciseMedia(exercise, large = false) {
-  const icon = getIcon(exercise.iconKey, `exercise-icon${large ? " large" : ""}`);
-  if (!exercise.imagePath) return `<span class="exercise-media${large ? " large" : ""}">${icon}</span>`;
-  return `<span class="exercise-media${large ? " large" : ""}">
-    <img src="${exercise.imagePath}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false" />
-    <span class="exercise-icon-fallback" hidden>${icon}</span>
-  </span>`;
+function exerciseMedia(exercise) {
+  return `<span class="exercise-media">${getIcon(exercise.iconKey, "exercise-icon")}</span>`;
 }
 function exerciseMatches(text) {
   const normalized = text.toLowerCase();
@@ -212,9 +207,16 @@ function exerciseHelperMarkup(exercise, compact = false) {
   return `<details class="exercise-helper${compact ? " compact" : ""}">
     <summary>${exerciseMedia(exercise)}<span><strong>${exercise.name}</strong><small>${exercise.cue}</small></span><i>How to</i></summary>
     <div class="exercise-guide">
-      <header class="exercise-guide-header">${exerciseMedia(exercise, true)}<div><h3>${exercise.name}</h3><span>Equipment · ${exercise.equipment}</span></div></header>
+      <header class="exercise-guide-header">
+        <div class="exercise-guide-chips">
+          <span class="exercise-chip category">${exercise.category}</span>
+          <span class="exercise-chip equipment">${exercise.equipment}</span>
+        </div>
+        <h3>${exercise.name}</h3>
+      </header>
+      <div class="exercise-cue-block"><span>Key cue</span><strong>${exercise.cue}</strong></div>
       <div class="exercise-guide-section"><h4>Setup</h4><p>${exercise.setup}</p><h4>How to do it</h4><ol>${exercise.steps.map(step => `<li>${step}</li>`).join("")}</ol></div>
-      <div class="exercise-guide-section"><h4>Key cue</h4><p>${exercise.cue}</p><h4>Common mistakes</h4><p>${exercise.mistakes}</p><h4>Alternatives</h4><p>${exercise.substitutions}</p></div>
+      <div class="exercise-guide-section"><h4>Common mistakes</h4><p>${exercise.mistakes}</p><h4>Alternatives</h4><p>${exercise.substitutions}</p></div>
     </div>
   </details>`;
 }
@@ -1232,6 +1234,14 @@ function renderLog() {
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
   syncDateControl(form.elements.date);
   if (!document.querySelector("#dynamicLogFields").innerHTML) document.querySelector("#dynamicLogFields").innerHTML = dynamicFields(form.elements.type.value);
+  const ctxBar = document.querySelector("#logContextBar");
+  if (ctxBar) {
+    const sessionType = form.elements.type?.value || planFor().type;
+    const weekNum = currentWeek();
+    const isManual = form.dataset.mode === "manual";
+    ctxBar.hidden = false;
+    ctxBar.innerHTML = `${sessionIcon(sessionType, "")}<div><span>Week ${weekNum} · ${isManual ? "Extra session" : "Planned session"}</span><strong>${sessionType}</strong></div>`;
+  }
   const unique = new Map();
   state.sessions
     .filter(session => session.programId === state.selectedProgram)
@@ -1900,7 +1910,14 @@ document.querySelector("#skipTodayButton")?.addEventListener("click", () => {
   renderToday();
   renderProgress();
 });
-document.querySelectorAll("[data-timer-kind]").forEach(button => button.addEventListener("click", () => startTimer(button.dataset.timerKind)));
+document.querySelectorAll(".timer-kind-btn").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".timer-kind-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}));
+document.querySelector("#timerStartBtn")?.addEventListener("click", () => {
+  const active = document.querySelector(".timer-kind-btn.active");
+  if (active) startTimer(active.dataset.timerKind);
+});
 document.querySelector("#timerPause")?.addEventListener("click", () => {
   if (timerState.running) {
     reconcileTimer();
