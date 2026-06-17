@@ -274,7 +274,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Ruck Builder", "Health 
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "1.3.3";
+const APP_VERSION = "1.3.4";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -1160,12 +1160,12 @@ function renderCompletionRecap(session, raw, plan, readiness) {
   const content = document.querySelector("#completionRecapContent");
   if (!content) return;
   content.innerHTML = [
-    ["Session", `<span class="recap-session">${sessionIcon(session.plannedType || session.type)}${session.plannedType || session.type}</span>`],
+    ["Session", `<span class="recap-session">${sessionIcon(session.sessionType || session.type)}${session.sessionType || session.type}</span>`],
     ["Training time", `${session.minutes || 0} min`],
     ["Adjustment", adjustment],
     ["Readiness", readinessName],
     ["Notes", session.notes ? "Saved locally ✓" : "No notes added"],
-    ["Engine", `+${["Strength A","Strength B","Mobility","Rest"].includes(session.type) ? 0 : session.minutes || 0} min`],
+    ["Engine", `+${["Strength A","Strength B","Mobility","Rest"].includes(session.sessionType || session.type) ? 0 : session.minutes || 0} min`],
     ["Week progress", `${stats.uniqueDates} / ${stats.plannedSessions} sessions`],
     ["Badge progress", `${progress.completed} / ${progress.required}`]
   ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
@@ -1400,12 +1400,13 @@ function collectSessionForm(form) {
   data.readinessColor = state.readiness[data.date]?.color || "";
   if (data.source === "planned") {
     const info = plannedInfoForState(state, data.date, state.selectedProgram);
+    const userType = data.type;  // preserve what the user actually selected
     data.id = plannedSessionId(data.date, state.selectedProgram, info.weekNumber, info.dayNumber, info.plan.type);
     data.weekNumber = info.weekNumber;
     data.dayNumber = info.dayNumber;
-    data.type = info.plan.type;
-    data.sessionType = info.plan.type;
-    data.plannedType = info.plan.type;
+    data.type = userType;              // keep user's selection
+    data.sessionType = userType;       // keep user's selection
+    data.plannedType = info.plan.type; // record what was originally scheduled
   } else {
     data.id = data.editingId || manualSessionId(data.date, data.type);
   }
