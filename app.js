@@ -1618,7 +1618,7 @@ function showOnboarding() {
   document.querySelector("#onboarding").hidden = false;
 }
 let updateMiniWorkout = () => {};
-function updateNavActiveIndicator(target) {
+function updateNavActiveIndicator(target, animate = false) {
   const nav = document.querySelector("#bottomNav");
   const selector = target ? `.bottom-nav a[data-target="${target}"]` : ".bottom-nav a.active";
   const activeLink = document.querySelector(selector);
@@ -1626,6 +1626,13 @@ function updateNavActiveIndicator(target) {
   requestAnimationFrame(() => {
     nav.style.setProperty("--active-x", `${activeLink.offsetLeft}px`);
     nav.style.setProperty("--active-w", `${activeLink.offsetWidth}px`);
+    if (animate) {
+      const indicator = nav.querySelector(".nav-active-indicator");
+      if (indicator) {
+        indicator.classList.remove("landing");
+        requestAnimationFrame(() => indicator.classList.add("landing"));
+      }
+    }
   });
 }
 const NAV_TABS = ["today", "plan", "log", "progress", "coach"];
@@ -1669,7 +1676,7 @@ function navigate(target) {
   state.meta.lastOpenedDate = dateKey(today());
   saveState();
   updateMiniWorkout();
-  updateNavActiveIndicator(target);
+  updateNavActiveIndicator(target, true);
   window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
 }
 function toast(message) {
@@ -2287,7 +2294,7 @@ if (settingsDialog?.open) settingsDialog.close();
 function fallbackNavigate(target) {
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
   document.querySelectorAll(".bottom-nav a").forEach(link => link.classList.toggle("active", link.dataset.target === target));
-  updateNavActiveIndicator(target);
+  updateNavActiveIndicator(target, true);
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
