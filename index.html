@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=0.9.9" />
-    <link rel="stylesheet" href="./styles.css?v=0.9.9" />
+    <link rel="manifest" href="./manifest.webmanifest?v=1.2.0" />
+    <link rel="stylesheet" href="./styles.css?v=1.2.0" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -61,13 +61,12 @@
 
     <main>
       <section class="view active" id="today" data-view="today">
-        <div class="hero">
-          <div>
+        <div class="week-strip-wrap">
+          <div class="week-strip-meta">
             <p class="eyebrow" id="dateLabel"></p>
-            <h1 id="todayHeadline">Train for what matters.</h1>
-            <p class="hero-copy" id="phaseLabel"></p>
+            <p class="week-phase-label" id="phaseLabel"></p>
           </div>
-          <div class="week-ring" id="weekRing"><span id="weekNumber">1</span><small>week</small></div>
+          <div class="week-strip" id="weekStrip" role="navigation" aria-label="This week"></div>
         </div>
 
         <article class="card readiness-check" id="readinessCheck">
@@ -80,20 +79,15 @@
             <button data-readiness="yellow" aria-pressed="false"><strong>Yellow</strong><span>Heavy legs, stress, allergies</span></button>
             <button data-readiness="red" aria-pressed="false"><strong>Red</strong><span>Chest tightness, sharp pain, sick</span></button>
           </div>
-          <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
-        </article>
-
-        <article class="next-move-card" id="nextBestMoveCard">
-          <div>
-            <p class="eyebrow">Next Best Move</p>
-            <strong id="nextBestMoveText">Check readiness, then follow the written plan.</strong>
+          <div class="readiness-score-inline" id="readinessScoreInline" hidden>
+            <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
+            <div>
+              <p class="eyebrow">Training Readiness</p>
+              <h3 id="beastTitle">Foundation Builder</h3>
+              <p id="readinessMessage"></p>
+            </div>
           </div>
-          <details><summary>Why?</summary><p id="nextBestMoveWhy"></p></details>
-        </article>
-
-        <article class="readiness-card">
-          <div class="score-ring" id="readinessRing"><strong id="readinessScore">—</strong><small id="readinessScale">/100</small></div>
-          <div><p class="eyebrow">Training Readiness</p><h2 id="beastTitle">Foundation Builder</h2><p id="readinessMessage"></p></div>
+          <label class="field"><span>Readiness note</span><input id="readinessNote" placeholder="Sleep, breathing, soreness..." /></label>
         </article>
 
         <article class="card workout-card" id="todayWorkoutCard">
@@ -151,11 +145,6 @@
           <div class="recap-grid" id="completionRecapContent"></div>
         </article>
 
-        <div class="metric-grid">
-          <article class="metric-card"><span>Weekly cardio</span><strong id="cardioMetric">0</strong><small>minutes logged</small></article>
-          <article class="metric-card"><span>Completion</span><strong id="completionMetric">0%</strong><small>this week</small></article>
-          <article class="metric-card"><span>VO₂ max</span><strong id="vo2Metric">28.7</strong><small>latest estimate</small></article>
-        </div>
       </section>
 
       <section class="view" id="plan" data-view="plan">
@@ -329,7 +318,39 @@
       </section>
     </div>
 
+    <div id="fieldBrief" class="field-brief" hidden role="dialog" aria-modal="true" aria-label="Active session">
+      <div class="field-brief-bg" aria-hidden="true"></div>
+      <div class="field-brief-content">
+        <header class="field-brief-header">
+          <button class="field-brief-back" id="fieldBriefBack" aria-label="Return to session details">← Today</button>
+          <div class="field-brief-week-badge">
+            <span class="field-brief-readiness-dot" id="fieldBriefDot"></span>
+            <span id="fieldBriefWeek">Week 1 of 12</span>
+          </div>
+        </header>
+        <div class="field-brief-mission">
+          <p class="eyebrow" id="fieldBriefEyebrow">Today's mission</p>
+          <h1 id="fieldBriefTitle">Zone 2 Walk</h1>
+          <div class="field-brief-cue-card">
+            <span>Key cue</span>
+            <p id="fieldBriefCue">Full-sentence pace.</p>
+          </div>
+        </div>
+        <div class="field-brief-timer-block" role="timer" aria-live="polite">
+          <p class="field-brief-phase-label" id="fieldBriefPhaseLabel">Main workout</p>
+          <strong class="field-brief-time" id="fieldBriefTime">00:00</strong>
+          <div class="field-brief-round" id="fieldBriefRound"></div>
+          <div class="field-brief-bar-wrap"><i class="field-brief-bar" id="fieldBriefBar"></i></div>
+          <p class="field-brief-next" id="fieldBriefNext"></p>
+        </div>
+        <div class="field-brief-actions">
+          <button class="field-brief-pause-btn" id="fieldBriefPause">Pause</button>
+          <button class="field-brief-done-btn" id="fieldBriefDone">Session complete →</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=0.9.9"></script>
+    <script src="./app.js?v=1.2.0"></script>
   </body>
 </html>

@@ -1,10 +1,10 @@
-const CACHE = "trainfor-v24";
+const CACHE = "trainfor-v27";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=0.9.9",
-  "./app.js?v=0.9.9",
-  "./manifest.webmanifest?v=0.9.9",
+  "./styles.css?v=1.2.0",
+  "./app.js?v=1.2.0",
+  "./manifest.webmanifest?v=1.2.0",
   "./sw.js"
 ];
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;

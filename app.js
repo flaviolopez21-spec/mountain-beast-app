@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "0.9.9";
+const APP_VERSION = "1.2.0";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -195,6 +195,20 @@ const EXERCISES = [
   { name: "Plank", aliases: ["plank"], iconKey: "core", category: "Core · Brace", cue: "Hold a straight line from shoulders to ankles.", equipment: "Bodyweight", setup: "Place elbows under the shoulders with the body straight.", steps: ["Brace the abs.", "Squeeze the glutes lightly.", "Breathe behind the brace."], mistakes: "Hips sagging, hips too high, or holding the breath.", substitutions: "Incline plank, dead bug" },
   { name: "Dead Bug", aliases: ["dead bug"], iconKey: "core", category: "Core · Brace", cue: "Move slowly while the ribs stay down.", equipment: "Bodyweight", setup: "Lie on your back with arms up and knees bent.", steps: ["Press the low back gently toward the floor.", "Extend the opposite arm and leg.", "Return slowly and switch."], mistakes: "The back arching, rushing, or losing control.", substitutions: "Plank, heel taps" }
 ];
+
+const SESSION_CUES = {
+  "Zone 2 Walk":           "Full-sentence pace. Nose breathing. If you're working hard, slow down.",
+  "Strength A":            "Leave 2–3 reps in reserve. Today builds the base — quality beats weight.",
+  "Strength B":            "Control the bottom of each movement. No bouncing, no rushing.",
+  "VO₂ Intervals":        "Hard phase is genuinely hard. Easy phase genuinely recovers you.",
+  "Tempo/Incline":         "Steady effort on the incline. Strong breathing — not desperate.",
+  "Hill Repeats":          "Drive the arms on the way up. Control the descent on every rep.",
+  "Long Walk/Hike/Ruck":  "Start easy. A strong finish should feel possible from the first mile.",
+  "Recovery Walk":         "Truly easy. If you're breathing hard, you're going too fast.",
+  "Mobility":              "Never force a range. Work at the comfortable edge and breathe.",
+  "Benchmark":             "Honest effort. This is data — not a competition with anyone.",
+  "Rest":                  "Rest is training. Today's job is recovery. Do it well.",
+};
 
 function exerciseMedia(exercise) {
   return `<span class="exercise-media">${getIcon(exercise.iconKey, "exercise-icon")}</span>`;
@@ -881,6 +895,7 @@ function setRingProgress(selector, degrees) {
 }
 function pulseRing(selector) {
   const ring = document.querySelector(selector);
+  if (!ring) return;
   ring.classList.remove("celebrate");
   requestAnimationFrame(() => ring.classList.add("celebrate"));
   setTimeout(() => ring.classList.remove("celebrate"), 700);
@@ -919,24 +934,24 @@ function renderToday() {
   const completed = matching?.status === "completed";
   const reduced = matching?.status === "reduced";
   document.querySelector("#dateLabel").textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  document.querySelector("#phaseLabel").textContent = `Week ${raw.week}, Day ${raw.day} · ${phaseName(raw.weekData.phase)} · ${raw.weekData.theme}`;
+  document.querySelector("#phaseLabel").textContent = `Week ${raw.week} of 12 · ${raw.weekData.theme}`;
   document.querySelector("#headerWeekLabel").textContent = `Week ${raw.week} of 12`;
   document.querySelector("#activeProgramLabel").textContent = `Current Goal: ${activeProgram().name}`;
   document.querySelector("#trainingForLabel").textContent = `Training For: ${trainingForText()}`;
   const readinessName = readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green";
   const headerToday = document.querySelector("#headerTodayLabel");
   if (headerToday) headerToday.textContent = `Today: ${plan.type} · ${readinessName} · ${plan.minutes ? `${plan.minutes} min` : plan.main[0]}`;
-  document.querySelector("#weekNumber").textContent = raw.week;
-  setRingProgress("#weekRing", raw.week / 12 * 360);
+  renderWeekStrip();
   document.querySelector("#todayPurpose").innerHTML = `${sessionIcon(raw.type, "inline")}<span>Week ${raw.week}, Day ${raw.day} · ${raw.type}</span>`;
   document.querySelector("#todayWorkout").textContent = plan.title;
   document.querySelector("#todayStatus").textContent = matching?.status === "skipped" ? "Protected day" : reduced ? "Minimum done" : completed ? "Completed today" : raw.title;
   document.querySelector("#todayStatus").classList.toggle("done", completed || reduced);
+  const nextMove = nextBestMove();
   document.querySelector("#adaptationBanner").innerHTML = readiness.color === "yellow"
     ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>${plan.minutes} min</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message"><strong>Adjustment: Yellow day, reduced about 35%.</strong> Goal: ${plan.adaptation}</div>`
     : readiness.color === "red"
       ? `<div class="adaptation-comparison"><div><span>Original</span><strong>${plan.originalMinutes} min</strong></div><div><span>Today</span><strong>Rest / ${plan.minutes} min easy</strong></div><div><span>Effort</span><strong>${plan.effort}</strong></div></div><div class="adaptation-message">${plan.adaptation}</div>`
-      : `<div class="adaptation-comparison"><div><span>Original</span><strong>${raw.minutes} min</strong></div><div><span>Today</span><strong>${raw.minutes} min</strong></div><div><span>Adjustment</span><strong>Full plan</strong></div></div><div class="adaptation-message">Green day: keep the effort controlled and complete the plan as written.</div>`;
+      : `<div class="adaptation-comparison"><div><span>Original</span><strong>${raw.minutes} min</strong></div><div><span>Today</span><strong>${raw.minutes} min</strong></div><div><span>Adjustment</span><strong>Full plan</strong></div></div><div class="adaptation-message">${nextMove.message}</div>`;
   document.querySelector("#adaptationBanner").className = `adaptation-banner ${readiness.color || "neutral"}`;
   document.querySelector("#workoutContent").innerHTML =
     (raw.adaptiveNote ? `<div class="plan-adjustment-note">Adjusted from weekly review: ${raw.adaptiveNote}.</div>` : "") +
@@ -951,12 +966,9 @@ function renderToday() {
   const status = document.querySelector("#readinessStatus");
   status.textContent = readiness.color ? `${readiness.color[0].toUpperCase()}${readiness.color.slice(1)} day` : "Not checked";
   status.className = `status-pill ${readiness.color || ""}`;
-  const nextMove = nextBestMove();
-  const nextMoveCard = document.querySelector("#nextBestMoveCard");
-  nextMoveCard.className = `next-move-card ${nextMove.tone}`;
-  document.querySelector("#nextBestMoveText").textContent = nextMove.message;
-  document.querySelector("#nextBestMoveWhy").textContent = nextMove.why;
   const score = readinessScore();
+  const scoreInline = document.querySelector("#readinessScoreInline");
+  if (scoreInline) scoreInline.hidden = !readiness.color;
   document.querySelector("#readinessScore").textContent = score.hasBaseline ? score.total : "…";
   document.querySelector("#readinessScale").style.display = score.hasBaseline ? "" : "none";
   setRingProgress("#readinessRing", score.hasBaseline ? score.total * 3.6 : 0);
@@ -964,9 +976,6 @@ function renderToday() {
   document.querySelector("#readinessMessage").textContent = score.hasBaseline
     ? `${score.stats.cardio} cardio min · ${score.stats.completion}% complete this week`
     : `${state.sessions.filter(session => session.programId === state.selectedProgram).length}/3 sessions logged`;
-  document.querySelector("#cardioMetric").textContent = score.stats.cardio;
-  document.querySelector("#completionMetric").textContent = `${score.stats.completion}%`;
-  document.querySelector("#vo2Metric").textContent = latestVo2().toFixed(1);
   document.querySelector("#completeTodayButton").textContent = completed ? "Completed today ✓" : "Complete Session";
   document.querySelector("#completeTodayButton").disabled = completed;
   document.querySelector("#completeTodayButton").classList.toggle("completed", completed);
@@ -975,7 +984,12 @@ function renderToday() {
     : reduced ? "Minimum version logged. Streak protected."
     : completed ? "Session complete. Nice work." : "";
   renderCompletionRecap(matching, raw, plan, readiness);
-  document.querySelector("#intervalTimerButton").hidden = raw.type !== "VO₂ Intervals";
+  const intervalBtn = document.querySelector("#intervalTimerButton");
+  intervalBtn.hidden = raw.type !== "VO₂ Intervals";
+  if (intervalBtn.hidden && intervalBtn.classList.contains("active")) {
+    intervalBtn.classList.remove("active");
+    document.querySelector(".timer-kind-btn[data-timer-kind='main']")?.classList.add("active");
+  }
   document.querySelector("#miniWorkoutText").textContent = `Today: ${plan.title} · ${plan.minutes} min · ${readiness.color ? readiness.color[0].toUpperCase() + readiness.color.slice(1) : "Green"}`;
   document.querySelector("#miniWorkout").hidden = false;
   renderSavedState();
@@ -1010,6 +1024,44 @@ function renderCompletionRecap(session, raw, plan, readiness) {
 }
 
 function phaseName(phase) { return phase === 1 ? "Build the Base" : phase === 2 ? "Build the Engine" : "Peak the Block"; }
+
+function renderWeekStrip() {
+  const strip = document.querySelector("#weekStrip");
+  if (!strip) return;
+  const now = today();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const dayLetters = ["M", "T", "W", "T", "F", "S", "S"];
+  strip.innerHTML = dayLetters.map((letter, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = dateKey(d);
+    const isToday = key === dateKey(now);
+    const isFuture = key > dateKey(now);
+    const session = plannedSessionFor(key);
+    let planned = null;
+    try { planned = planFor(d); } catch (_) {}
+    let dotClass = "dot-empty";
+    if (session?.status === "completed" || session?.status === "reduced") {
+      dotClass = "dot-done";
+    } else if (session?.status === "skipped") {
+      dotClass = "dot-skip";
+    } else if (planned?.type === "Rest") {
+      dotClass = "dot-rest";
+    } else if (isToday) {
+      dotClass = "dot-today";
+    } else if (!isFuture) {
+      dotClass = "dot-missed";
+    }
+    const label = d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    const statusText = session?.status ? `: ${session.status}` : "";
+    return `<button class="week-day${isToday ? " today" : ""}${isFuture ? " future" : ""}" data-date="${key}" aria-label="${label}${statusText}"${isFuture ? " disabled" : ""}>
+      <span class="day-letter">${letter}</span>
+      <span class="day-num">${d.getDate()}</span>
+      <span class="day-dot ${dotClass}"></span>
+    </button>`;
+  }).join("");
+}
 function renderPlan(phase = 1) {
   document.querySelector("#planList").innerHTML = activeProgram().weeks.map((week, index) => ({ week, number: index + 1 }))
     .filter(item => item.week.phase === phase)
@@ -1672,6 +1724,50 @@ function renderTimer() {
   panel.classList.toggle("easy-phase", timerState.running && phase?.label === "Easy recovery");
   const finish = document.querySelector("#timerFinish");
   if (finish) finish.hidden = !!phase;
+  renderFieldBrief();
+}
+function renderFieldBrief() {
+  const brief = document.querySelector("#fieldBrief");
+  if (!brief || brief.hidden) return;
+  const phase = timerState.phases[timerState.phaseIndex];
+  const next = timerState.phases[timerState.phaseIndex + 1];
+  const completedSec = timerState.phases.slice(0, timerState.phaseIndex).reduce((s, p) => s + p.seconds, 0);
+  const phaseElapsed = phase ? Math.max(0, phase.seconds - timerState.remaining) : 0;
+  const percent = timerState.totalSeconds ? Math.min(100, Math.round((completedSec + phaseElapsed) / timerState.totalSeconds * 100)) : 0;
+  const qs = id => document.querySelector(id);
+  const set = (id, text) => { const el = qs(id); if (el) el.textContent = text; };
+  set("#fieldBriefPhaseLabel", phase?.label || "Timer complete");
+  set("#fieldBriefTime", timerText(timerState.remaining));
+  set("#fieldBriefRound", timerState.totalRounds > 1 ? `Round ${phase?.round || 1} of ${timerState.totalRounds}` : "");
+  set("#fieldBriefNext", next ? `Next: ${timerText(next.seconds)} ${next.label.toLowerCase()}` : (phase ? "Final phase" : "Ready to log"));
+  const bar = qs("#fieldBriefBar");
+  if (bar) bar.style.width = `${percent}%`;
+  const pauseBtn = qs("#fieldBriefPause");
+  if (pauseBtn) pauseBtn.textContent = timerState.running ? "Pause" : "Resume";
+  brief.classList.toggle("field-hard", timerState.running && phase?.label === "Hard interval");
+  brief.classList.toggle("field-easy", timerState.running && phase?.label === "Easy recovery");
+}
+function openFieldBrief() {
+  const brief = document.querySelector("#fieldBrief");
+  if (!brief) return;
+  const raw = planFor();
+  const plan = adjustedPlan(raw, currentReadiness().color);
+  const readiness = currentReadiness();
+  document.querySelector("#fieldBriefWeek").textContent = `Week ${currentWeek()} of 12`;
+  document.querySelector("#fieldBriefTitle").textContent = plan.title || raw.type;
+  document.querySelector("#fieldBriefCue").textContent = SESSION_CUES[raw.type] || "Stay focused. Move with purpose.";
+  const dot = document.querySelector("#fieldBriefDot");
+  if (dot) { dot.className = "field-brief-readiness-dot"; if (readiness.color) dot.classList.add(readiness.color); }
+  brief.hidden = false;
+  requestAnimationFrame(() => brief.classList.add("visible"));
+  document.querySelector("#miniWorkout")?.classList.remove("visible");
+  renderFieldBrief();
+}
+function closeFieldBrief() {
+  const brief = document.querySelector("#fieldBrief");
+  if (!brief) return;
+  brief.classList.remove("visible");
+  setTimeout(() => { brief.hidden = true; }, 300);
 }
 function persistTimer() {
   state.meta.timer = timerState.phases.length ? {
@@ -1696,7 +1792,10 @@ function stopTimer(hide = true, clear = false) {
   } else {
     persistTimer();
   }
-  if (hide) document.querySelector("#timerPanel").hidden = true;
+  if (hide) {
+    document.querySelector("#timerPanel").hidden = true;
+    closeFieldBrief();
+  }
 }
 function reconcileTimer() {
   if (!timerState.running || !timerState.deadline) return;
@@ -1756,6 +1855,7 @@ function startTimer(kind) {
   persistTimer();
   renderTimer();
   timerState.intervalId = setInterval(tickTimer, 1000);
+  openFieldBrief();
 }
 function resetTimer() {
   if (timerState.kind) startTimer(timerState.kind);
@@ -1771,6 +1871,71 @@ function restoreTimer() {
     if (timerState.running) timerState.intervalId = setInterval(tickTimer, 1000);
   }
   renderTimer();
+}
+
+/* ── Topbar height → CSS variable (for sticky week strip) ── */
+function setTopbarHeight() {
+  const topbar = document.querySelector(".topbar");
+  if (topbar) document.documentElement.style.setProperty("--topbar-h", `${topbar.offsetHeight}px`);
+}
+
+/* ── Bottom nav touch slider (Apple Liquid Glass style) ──── */
+function setupNavSlider() {
+  const nav = document.querySelector("#bottomNav");
+  if (!nav) return;
+  const TABS = ["today", "plan", "log", "progress", "coach"];
+
+  function links() { return [...nav.querySelectorAll("a[data-target]")]; }
+
+  function nearestIndex(touchClientX) {
+    let nearest = 0, nearestDist = Infinity;
+    links().forEach((link, i) => {
+      const r = link.getBoundingClientRect();
+      const dist = Math.abs(touchClientX - (r.left + r.width / 2));
+      if (dist < nearestDist) { nearestDist = dist; nearest = i; }
+    });
+    return nearest;
+  }
+
+  function snapIndicatorToLink(link) {
+    nav.style.setProperty("--active-x", `${link.offsetLeft}px`);
+    nav.style.setProperty("--active-w", `${link.offsetWidth}px`);
+  }
+
+  let startX = null;
+  let isDragging = false;
+
+  nav.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    isDragging = false;
+  }, { passive: true });
+
+  nav.addEventListener("touchmove", e => {
+    if (startX === null) return;
+    if (!isDragging && Math.abs(e.touches[0].clientX - startX) < 8) return;
+    isDragging = true;
+    nav.classList.add("nav-dragging");
+    const idx = nearestIndex(e.touches[0].clientX);
+    const ls = links();
+    snapIndicatorToLink(ls[idx]);
+    ls.forEach((l, i) => l.classList.toggle("active", i === idx));
+  }, { passive: true });
+
+  nav.addEventListener("touchend", e => {
+    nav.classList.remove("nav-dragging");
+    if (!isDragging) { startX = null; return; }
+    const idx = nearestIndex(e.changedTouches[0].clientX);
+    navigate(TABS[idx]);
+    startX = null;
+    isDragging = false;
+  }, { passive: true });
+
+  nav.addEventListener("touchcancel", () => {
+    nav.classList.remove("nav-dragging");
+    startX = null;
+    isDragging = false;
+    updateNavActiveIndicator(); // restore real active tab
+  });
 }
 
 function bootstrapApp() {
@@ -1833,11 +1998,13 @@ updateMiniWorkout = function updateMiniWorkoutView() {
 window.addEventListener("scroll", () => {
   if (scrollFrame == null) scrollFrame = requestAnimationFrame(updateNavForScroll);
 }, { passive: true });
+setTopbarHeight();
+setupNavSlider();
 bottomNav.addEventListener("pointerdown", expandNavForInteraction);
 bottomNav.addEventListener("focusin", expandNavForInteraction);
 bottomNav.addEventListener("keydown", expandNavForInteraction);
-window.addEventListener("resize", () => updateNavActiveIndicator(), { passive: true });
-window.addEventListener("orientationchange", () => updateNavActiveIndicator(), { passive: true });
+window.addEventListener("resize", () => { updateNavActiveIndicator(); setTopbarHeight(); }, { passive: true });
+window.addEventListener("orientationchange", () => { updateNavActiveIndicator(); setTopbarHeight(); }, { passive: true });
 
 document.querySelector("#onboardingForm")?.addEventListener("submit", event => {
   event.preventDefault();
@@ -1889,7 +2056,6 @@ document.querySelector("#completeTodayButton")?.addEventListener("click", () => 
   savedLocally("Session complete ✓");
   renderToday();
   renderProgress();
-  pulseRing("#weekRing");
   pulseRing("#readinessRing");
   if (!showNewBadge(earnedBefore)) showReward();
 });
@@ -1917,6 +2083,47 @@ document.querySelectorAll(".timer-kind-btn").forEach(btn => btn.addEventListener
 document.querySelector("#timerStartBtn")?.addEventListener("click", () => {
   const active = document.querySelector(".timer-kind-btn.active");
   if (active) startTimer(active.dataset.timerKind);
+});
+// Week strip — tap a past day to open its log entry
+document.querySelector("#weekStrip")?.addEventListener("click", e => {
+  const btn = e.target.closest(".week-day");
+  if (!btn || btn.disabled || btn.classList.contains("future")) return;
+  const key = btn.dataset.date;
+  if (key === dateKey(today())) return; // already on today
+  navigate("log");
+  const dateInput = document.querySelector('[name="date"]');
+  if (dateInput) {
+    dateInput.value = key;
+    dateInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+});
+
+document.querySelector("#fieldBriefBack")?.addEventListener("click", closeFieldBrief);
+document.querySelector("#fieldBriefPause")?.addEventListener("click", () => {
+  if (timerState.running) {
+    clearInterval(timerState.intervalId);
+    timerState.intervalId = null;
+    timerState.running = false;
+    timerState.deadline = null;
+    persistTimer();
+  } else if (timerState.phases[timerState.phaseIndex]) {
+    timerState.running = true;
+    timerState.deadline = Date.now() + timerState.remaining * 1000;
+    persistTimer();
+    timerState.intervalId = setInterval(tickTimer, 1000);
+  }
+  renderTimer();
+});
+document.querySelector("#fieldBriefDone")?.addEventListener("click", () => {
+  closeFieldBrief();
+  stopTimer(true, true);
+  const earnedBefore = earnedBadgeWeeks();
+  upsertTodaySession("completed");
+  savedLocally("Session complete ✓");
+  renderToday();
+  renderProgress();
+  pulseRing("#readinessRing");
+  if (!showNewBadge(earnedBefore)) showReward();
 });
 document.querySelector("#timerPause")?.addEventListener("click", () => {
   if (timerState.running) {
