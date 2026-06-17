@@ -137,7 +137,7 @@ const FUTURE_PROGRAMS = ["5K Builder", "Strength Base", "Rainier Hiking Prep", "
 
 const STORAGE_KEY = "mountain-beast-v1";
 const DEFAULT_START = "2026-06-15";
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 const APP_UPDATED = "June 16, 2026";
 const SESSION_TYPES = [
   "Zone 2 Walk", "VO₂ Intervals", "Tempo/Incline", "Hill Repeats",
@@ -1369,6 +1369,7 @@ function renderProgress() {
     return `<div class="weekly-column"><div class="weekly-bar"><i style="height:${height}%"></i></div><strong>W${index + 1}</strong><small>${stats.cardio}m · ${stats.completion}%</small></div>`;
   }).join("");
   renderSystemRings();
+  renderWeek1Comparison();
   renderWeeklySummary();
   const form = document.querySelector("#weeklyCheckinForm");
   if (!form.elements.date.value) form.elements.date.value = dateKey(activeDate());
@@ -1477,8 +1478,32 @@ function updateNavActiveIndicator(target) {
     nav.style.setProperty("--active-w", `${activeLink.offsetWidth}px`);
   });
 }
+const NAV_TABS = ["today", "plan", "log", "progress", "coach"];
 function navigate(target) {
-  document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.dataset.view === target));
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Determine slide direction from current active tab
+  const currentView = document.querySelector(".view.active");
+  const currentIdx = currentView ? NAV_TABS.indexOf(currentView.dataset.view) : -1;
+  const targetIdx = NAV_TABS.indexOf(target);
+  const slideClass = (!reduced && currentIdx !== -1 && currentIdx !== targetIdx)
+    ? (targetIdx > currentIdx ? "slide-right" : "slide-left")
+    : null;
+
+  // Remove stale slide classes, then toggle active
+  document.querySelectorAll(".view").forEach(view => {
+    view.classList.remove("slide-right", "slide-left");
+    view.classList.toggle("active", view.dataset.view === target);
+  });
+
+  // Apply slide class to incoming view
+  if (slideClass) {
+    const incoming = document.querySelector(`[data-view="${target}"]`);
+    if (incoming) {
+      incoming.classList.add(slideClass);
+      setTimeout(() => incoming.classList.remove(slideClass), 400);
+    }
+  }
+
   document.querySelectorAll(".bottom-nav a").forEach(link => {
     const active = link.dataset.target === target;
     link.classList.toggle("active", active);
@@ -1495,7 +1520,7 @@ function navigate(target) {
   saveState();
   updateMiniWorkout();
   updateNavActiveIndicator(target);
-  window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
 }
 function toast(message) {
   const el = document.querySelector("#toast");
@@ -1938,6 +1963,139 @@ function setupNavSlider() {
   });
 }
 
+/* ── Pre-session countdown ─────────────────────────────────────────────── */
+function openSessionCountdown(onFinish) {
+  const overlay = document.querySelector("#sessionCountdown");
+  if (!overlay) { onFinish(); return; }
+  let raw;
+  try { raw = planFor(); } catch (_) { raw = null; }
+  const sessionName = raw?.title || "Today's session";
+  const cue = SESSION_CUES[raw?.type] || "Eyes up. Move with intent.";
+  document.querySelector("#countdownSessionName").textContent = sessionName;
+  document.querySelector("#countdownCue").textContent = cue;
+  const numEl = document.querySelector("#countdownNumber");
+  let count = 3;
+  numEl.textContent = count;
+  overlay.hidden = false;
+  requestAnimationFrame(() => overlay.classList.add("visible"));
+
+  function resetAnim() {
+    numEl.style.animation = "none";
+    requestAnimationFrame(() => { numEl.style.animation = ""; });
+  }
+  resetAnim();
+
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    clearInterval(interval);
+    overlay.classList.remove("visible");
+    overlay.addEventListener("transitionend", () => { overlay.hidden = true; }, { once: true });
+    onFinish();
+  }
+
+  const interval = setInterval(() => {
+    count--;
+    if (count <= 0) { finish(); return; }
+    numEl.textContent = count;
+    resetAnim();
+  }, 1000);
+
+  overlay.addEventListener("click", finish, { once: true });
+}
+
+/* ── Week 1 comparison card ────────────────────────────────────────────── */
+function renderWeek1Comparison() {
+  const card = document.querySelector("#week1ComparisonCard");
+  if (!card) return;
+  const week = currentWeek();
+  if (week <= 1) { card.hidden = true; return; }
+  card.hidden = false;
+  const w1 = weeklyStats(1);
+  const wNow = weeklyStats(week);
+  const cardioDiff = wNow.cardio - w1.cardio;
+  const sign = n => n > 0 ? "+" : "";
+  document.querySelector("#week1ComparisonHeadline").textContent = cardioDiff >= 0
+    ? `${cardioDiff} more cardio minutes than Week 1`
+    : `${Math.abs(cardioDiff)} fewer cardio minutes than Week 1`;
+  document.querySelector("#week1ComparisonRows").innerHTML = [
+    ["Cardio minutes", w1.cardio, wNow.cardio, " min"],
+    ["Completion",     w1.completion, wNow.completion, "%"],
+    ["Sessions logged", w1.uniqueDates, wNow.uniqueDates, ""]
+  ].map(([label, then, now, unit]) => {
+    const diff = now - then;
+    const cls = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+    return `<div class="week1-row">
+      <span class="week1-label">${label}</span>
+      <span class="week1-then">Wk 1: ${then}${unit}</span>
+      <span class="week1-now">Now: ${now}${unit}</span>
+      <span class="week1-delta ${cls}">${sign(diff)}${diff}${unit}</span>
+    </div>`;
+  }).join("");
+}
+
+/* ── Main-content swipe-to-navigate ───────────────────────────────────── */
+function setupMainSwipe() {
+  const mainEl = document.querySelector("main");
+  const nav = document.querySelector("#bottomNav");
+  if (!mainEl || !nav) return;
+
+  function getLinks() { return [...nav.querySelectorAll("a[data-target]")]; }
+  function currentIndex() {
+    const active = document.querySelector(".view.active");
+    return active ? NAV_TABS.indexOf(active.dataset.view) : 0;
+  }
+  function lerpIndicator(fromLink, toLink, t) {
+    nav.style.setProperty("--active-x", `${fromLink.offsetLeft + (toLink.offsetLeft - fromLink.offsetLeft) * t}px`);
+    nav.style.setProperty("--active-w", `${fromLink.offsetWidth + (toLink.offsetWidth - fromLink.offsetWidth) * t}px`);
+  }
+
+  let startX = null, startY = null, tracking = false;
+
+  mainEl.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = false;
+  }, { passive: true });
+
+  mainEl.addEventListener("touchmove", e => {
+    if (startX === null) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (!tracking) {
+      if (Math.abs(dy) > Math.abs(dx) + 4) { startX = null; return; }
+      if (Math.abs(dx) < 12) return;
+      tracking = true;
+      nav.classList.add("nav-dragging");
+    }
+    const idx = currentIndex();
+    const links = getLinks();
+    const progress = Math.min(1, Math.abs(dx) / window.innerWidth);
+    if (dx < 0 && idx < NAV_TABS.length - 1) lerpIndicator(links[idx], links[idx + 1], progress);
+    else if (dx > 0 && idx > 0)              lerpIndicator(links[idx], links[idx - 1], progress);
+  }, { passive: true });
+
+  mainEl.addEventListener("touchend", e => {
+    nav.classList.remove("nav-dragging");
+    if (!tracking) { startX = null; return; }
+    const dx = e.changedTouches[0].clientX - startX;
+    const idx = currentIndex();
+    const threshold = window.innerWidth * 0.28;
+    if      (dx < -threshold && idx < NAV_TABS.length - 1) navigate(NAV_TABS[idx + 1]);
+    else if (dx >  threshold && idx > 0)                   navigate(NAV_TABS[idx - 1]);
+    else                                                    updateNavActiveIndicator();
+    startX = null; startY = null; tracking = false;
+  }, { passive: true });
+
+  mainEl.addEventListener("touchcancel", () => {
+    nav.classList.remove("nav-dragging");
+    startX = null; tracking = false;
+    updateNavActiveIndicator();
+  });
+}
+
 function bootstrapApp() {
 const bottomNav = document.querySelector("#bottomNav");
 if (!bottomNav) {
@@ -2000,6 +2158,7 @@ window.addEventListener("scroll", () => {
 }, { passive: true });
 setTopbarHeight();
 setupNavSlider();
+setupMainSwipe();
 bottomNav.addEventListener("pointerdown", expandNavForInteraction);
 bottomNav.addEventListener("focusin", expandNavForInteraction);
 bottomNav.addEventListener("keydown", expandNavForInteraction);
@@ -2082,7 +2241,7 @@ document.querySelectorAll(".timer-kind-btn").forEach(btn => btn.addEventListener
 }));
 document.querySelector("#timerStartBtn")?.addEventListener("click", () => {
   const active = document.querySelector(".timer-kind-btn.active");
-  if (active) startTimer(active.dataset.timerKind);
+  if (active) openSessionCountdown(() => startTimer(active.dataset.timerKind));
 });
 // Week strip — tap a past day to open its log entry
 document.querySelector("#weekStrip")?.addEventListener("click", e => {

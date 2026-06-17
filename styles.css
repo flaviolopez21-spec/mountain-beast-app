@@ -114,6 +114,10 @@ main { max-width: 1120px; margin: auto; padding: 20px 22px calc(120px + env(safe
 .view { display: none; animation: rise .34s cubic-bezier(.2,.8,.2,1); }
 .view.active { display: block; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(38px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInLeft  { from { opacity: 0; transform: translateX(-38px); } to { opacity: 1; transform: translateX(0); } }
+.view.slide-right { animation: slideInRight .32s cubic-bezier(.2,.8,.2,1) both; }
+.view.slide-left  { animation: slideInLeft  .32s cubic-bezier(.2,.8,.2,1) both; }
 
 .section-heading::after {
   content: ""; position: absolute; z-index: -1; width: 210px; height: 90px; right: 2%; bottom: 4px; opacity: .16;
@@ -642,6 +646,40 @@ textarea { resize: vertical; }
 .mini-workout span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 750; }
 .mini-workout strong { flex: 0 0 auto; color: var(--pine-2); font-size: 11px; }
 
+/* ─── SESSION COUNTDOWN ─────────────────────────────────────────────────────── */
+.session-countdown {
+  position: fixed; inset: 0; z-index: 55;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(18,50,43,.97);
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+.session-countdown[hidden] { display: none; }
+.session-countdown.visible { opacity: 1; visibility: visible; }
+.session-countdown-content {
+  text-align: center; padding: 40px 32px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  max-width: 320px;
+}
+.session-countdown-eyebrow { color: var(--lime); margin: 0; }
+.session-countdown-cue {
+  color: rgba(255,255,255,.6); font-size: 14px; line-height: 1.55;
+  margin: 0; max-width: 260px;
+}
+.countdown-number {
+  font-size: clamp(100px, 28vw, 140px); font-weight: 900;
+  letter-spacing: -.06em; line-height: 1; color: white;
+  animation: countdown-pop .7s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes countdown-pop {
+  from { transform: scale(1.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.countdown-skip {
+  color: rgba(255,255,255,.28); font-size: 11px; font-weight: 700;
+  letter-spacing: .04em; margin: 10px 0 0;
+}
+
 /* ─── FIELD BRIEF ──────────────────────────────────────────────────────────── */
 .field-brief {
   position: fixed; inset: 0; z-index: 60;
@@ -803,6 +841,19 @@ code { padding: 2px 5px; border-radius: 5px; background: var(--sand); font-size:
 .badge-detail-facts span, .badge-detail-facts strong { display: block; }
 .badge-detail-facts span { color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
 .badge-detail-facts strong { margin-top: 4px; font-size: 12px; line-height: 1.4; }
+
+/* ─── WEEK 1 COMPARISON CARD ─────────────────────────────────────────────── */
+.week1-row {
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.week1-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.week1-label { font-size: 13px; font-weight: 700; color: var(--ink); }
+.week1-then, .week1-now { font-size: 11px; color: var(--ink-2); white-space: nowrap; }
+.week1-delta { font-size: 12px; font-weight: 800; white-space: nowrap; min-width: 36px; text-align: right; }
+.week1-delta.up   { color: #3a7d44; }
+.week1-delta.down { color: #c0392b; }
+.week1-delta.flat { color: var(--ink-2); }
 
 @media (max-width: 680px) {
   main { padding: 8px 15px calc(120px + env(safe-area-inset-bottom)); }

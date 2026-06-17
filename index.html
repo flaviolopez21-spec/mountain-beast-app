@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#183c35" />
     <meta name="description" content="TrainFor: purpose-driven training that stays private on your device." />
     <title>TrainFor</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=1.2.0" />
-    <link rel="stylesheet" href="./styles.css?v=1.2.0" />
+    <link rel="manifest" href="./manifest.webmanifest?v=1.3.0" />
+    <link rel="stylesheet" href="./styles.css?v=1.3.0" />
   </head>
   <body>
     <div class="update-banner" id="updateBanner" hidden>
@@ -237,6 +237,11 @@
           <div class="saved-line"><span id="weeklyNoteStatus"></span><span>Saved on this device</span></div>
         </article>
 
+        <article class="card week1-comparison-card" id="week1ComparisonCard" hidden>
+          <div class="card-heading"><div><p class="eyebrow">Compared to Week 1</p><h2 id="week1ComparisonHeadline">Looking back</h2></div></div>
+          <div class="week1-comparison-rows" id="week1ComparisonRows"></div>
+        </article>
+
         <article class="card system-rings-card">
           <div class="card-heading"><div><p class="eyebrow">This week</p><h2>Engine · Chassis · Consistency</h2></div></div>
           <div class="system-rings" id="systemRings">
@@ -318,6 +323,15 @@
       </section>
     </div>
 
+    <div id="sessionCountdown" class="session-countdown" hidden role="dialog" aria-modal="true" aria-label="Session starting">
+      <div class="session-countdown-content">
+        <p class="eyebrow session-countdown-eyebrow" id="countdownSessionName"></p>
+        <p class="session-countdown-cue" id="countdownCue"></p>
+        <div class="countdown-number" id="countdownNumber" aria-live="polite">3</div>
+        <p class="countdown-skip">Tap anywhere to skip</p>
+      </div>
+    </div>
+
     <div id="fieldBrief" class="field-brief" hidden role="dialog" aria-modal="true" aria-label="Active session">
       <div class="field-brief-bg" aria-hidden="true"></div>
       <div class="field-brief-content">
@@ -351,6 +365,6 @@
     </div>
 
     <div class="toast" id="toast" role="status"></div>
-    <script src="./app.js?v=1.2.0"></script>
+    <script src="./app.js?v=1.3.0"></script>
   </body>
 </html>
